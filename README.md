@@ -5,20 +5,19 @@
 # ![](https://user-images.githubusercontent.com/4441470/224455560-91ed3ee7-f510-4041-a8d2-3fc093025112.png) Soenneker.Utils.HttpClientCache
 ### Providing thread-safe singleton HttpClients
 
-### Why
+### Why?
 
-'Long-lived' `HttpClient` static/singleton instances are the recommended use pattern in .NET. Avoid the unnecessary overhead of `IHttpClientFactory`, and _definitely_ avoid creating a new `HttpClient` instance per request.
+'Long-lived' `HttpClient` static/singleton instances is the recommended use pattern in .NET. Avoid the unnecessary overhead of `IHttpClientFactory`, and _definitely_ avoid creating a new `HttpClient` instance per request.
+
+`HttpClientCache` provides a thread-safe singleton `HttpClient` instance per key via dependency injection. `HttpClient`s are created lazily, and disposed on application shutdown (or manually if you want).
 
 See [Guidelines for using HttpClient](https://learn.microsoft.com/en-us/dotnet/fundamentals/networking/http/httpclient-guidelines)
-
-`HttpClientCache` provides a thread-safe singleton `HttpClient` instance per key. The `HttpClient` is created on first access and disposed on application shutdown (or manual removal/disposal).
 
 ## Installation
 
 ```
 Install-Package Soenneker.Utils.HttpClientCache
 ```
-
 
 ## Usage
 
