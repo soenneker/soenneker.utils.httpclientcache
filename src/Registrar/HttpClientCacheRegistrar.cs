@@ -10,9 +10,9 @@ namespace Soenneker.Utils.HttpClientCache.Registrar;
 public static class HttpClientCacheRegistrar
 {
     /// <summary>
-    /// Adds <see cref="HttpClientCache"/>
+    /// Adds <see cref="HttpClientCache"/> as a singleton to the <see cref="IServiceCollection"/>
     /// </summary>
-    public static void AddHttpClientCacheAsSingleton(this IServiceCollection services)
+    public static void AddHttpClientCache(this IServiceCollection services)
     {
         services.TryAddSingleton<IHttpClientCache, HttpClientCache>();
     }
