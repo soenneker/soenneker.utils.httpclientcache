@@ -48,8 +48,10 @@ public class HttpClientCache : IHttpClientCache
 
             var httpClient = new HttpClient(socketsHandler);
 
-            if (argsDict?["timeout"] is TimeSpan timeout)
-                httpClient.Timeout = timeout;
+            if (argsDict != null && argsDict.TryGetValue("timeout", out object? value))
+            {
+                httpClient.Timeout = (TimeSpan) value;
+            }
 
             return httpClient;
         });
