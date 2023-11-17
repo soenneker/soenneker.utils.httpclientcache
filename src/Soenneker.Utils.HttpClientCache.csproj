@@ -40,6 +40,6 @@
 
         <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
 
-        <PackageReference Include="Soenneker.Utils.SingletonDictionary" Version="2.0.101" />
+        <PackageReference Include="Soenneker.Utils.SingletonDictionary" Version="2.1.6" />
     </ItemGroup>
 </Project>
