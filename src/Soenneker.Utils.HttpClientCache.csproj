@@ -40,6 +40,6 @@
 
         
 
-        <PackageReference Include="Soenneker.Utils.SingletonDictionary" Version="2.1.30" />
+        <PackageReference Include="Soenneker.Utils.SingletonDictionary" Version="2.1.31" />
     </ItemGroup>
 </Project>
