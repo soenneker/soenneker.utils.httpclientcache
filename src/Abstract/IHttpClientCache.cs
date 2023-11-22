@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics.Contracts;
 using System.Net.Http;
 using System.Threading.Tasks;
 
@@ -18,10 +19,12 @@ public interface IHttpClientCache : IAsyncDisposable, IDisposable
     /// <param name="maxConnectionsPerServer">If this is null, this is set to 40</param>
     /// <param name="timeout">If this is null, this is set to the default 100s</param>
     /// <returns></returns>
+    [Pure]
     ValueTask<HttpClient> Get(string id, TimeSpan? pooledConnectionLifetime = null, bool? cookieContainer = null, int? maxConnectionsPerServer = null, TimeSpan? timeout = null);
 
     /// <inheritdoc cref="Get(string, TimeSpan?, bool?, int?, TimeSpan?)"/>"/>
     /// <remarks><see cref="Get"/> async method is recommended</remarks>
+    [Pure]
     HttpClient GetSync(string id, TimeSpan? pooledConnectionLifetime = null, bool? cookieContainer = null,
         int? maxConnectionsPerServer = null, TimeSpan? timeout = null);
 
