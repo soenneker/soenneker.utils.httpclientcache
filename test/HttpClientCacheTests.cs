@@ -27,4 +27,13 @@ public class HttpClientCacheTests : UnitTest
         HttpClient httpClient = await httpClientCache.Get("test", TimeSpan.FromMinutes(10), true, 40);
         httpClient.Should().NotBeNull();
     }
+
+    [Fact]
+    public async Task Get_should_not_be_null_with_partial_parameters()
+    {
+        var httpClientCache = new HttpClientCache();
+
+        HttpClient httpClient = await httpClientCache.Get("test", TimeSpan.FromMinutes(10));
+        httpClient.Should().NotBeNull();
+    }
 }

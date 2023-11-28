@@ -32,18 +32,12 @@ public class HttpClientCache : IHttpClientCache
             {
                 argsDict = (Dictionary<string, object>) args.First();
 
-                if (argsDict["pooledConnectionLifetime"] is TimeSpan timeSpan)
-                    socketsHandler.PooledConnectionLifetime = timeSpan;
-                else
-                    socketsHandler.PooledConnectionLifetime = TimeSpan.FromMinutes(10);
-
-                if (argsDict["cookieContainer"] is true)
+                socketsHandler.PooledConnectionLifetime = GetPooledConnectionLifetime(argsDict);
+                
+                if (GetCookieContainer(argsDict))
                     socketsHandler.CookieContainer = new CookieContainer();
 
-                if (argsDict["maxConnectionsPerServer"] is int maxConnectionsPerServer)
-                    socketsHandler.MaxConnectionsPerServer = maxConnectionsPerServer;
-                else
-                    socketsHandler.MaxConnectionsPerServer = 40;
+                socketsHandler.MaxConnectionsPerServer = GetMaxConnectionsPerServer(argsDict);
             }
 
             var httpClient = new HttpClient(socketsHandler);
@@ -55,6 +49,39 @@ public class HttpClientCache : IHttpClientCache
 
             return httpClient;
         });
+    }
+
+    private static int GetMaxConnectionsPerServer(Dictionary<string, object> argsDict)
+    {
+        if (argsDict.TryGetValue("maxConnectionsPerServer", out object? value))
+        {
+            if (value is int maxConnectionsPerServer)
+                return maxConnectionsPerServer;
+        }
+
+        return 40;
+    }
+
+    private static bool GetCookieContainer(Dictionary<string, object> args)
+    {
+        if (args.TryGetValue("cookieContainer", out object? cookieContainerObj))
+        {
+            if (cookieContainerObj is bool cookieContainer)
+                return cookieContainer;
+        }
+
+        return false;
+    }
+
+    private static TimeSpan GetPooledConnectionLifetime(Dictionary<string, object> args)
+    {
+        if (args.TryGetValue("pooledConnectionLifetime", out object? timeSpanObj))
+        {
+            if (timeSpanObj is TimeSpan timeSpan)
+                return timeSpan;
+        }
+
+        return TimeSpan.FromMinutes(10);
     }
 
     public ValueTask<HttpClient> Get(string id, TimeSpan? pooledConnectionLifetime = null, bool? cookieContainer = null,
