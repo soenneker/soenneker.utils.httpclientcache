@@ -16,7 +16,7 @@ See [Guidelines for using HttpClient](https://learn.microsoft.com/en-us/dotnet/f
 ## Installation
 
 ```
-Install-Package Soenneker.Utils.HttpClientCache
+dotnet add package Soenneker.Utils.HttpClientCache
 ```
 
 ## Usage
