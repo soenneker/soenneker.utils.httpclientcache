@@ -21,7 +21,7 @@ dotnet add package Soenneker.Utils.HttpClientCache
 
 ## Usage
 
-1. Register the interop within DI (`Program.cs`).
+1. Register `IHttpClientCache` within DI (`Program.cs`).
 
 ```csharp
 public static async Task Main(string[] args)
