@@ -15,6 +15,12 @@ public class HttpClientCache : IHttpClientCache
 {
     private readonly SingletonDictionary<HttpClient> _httpClients;
 
+    private const string _defaultRequestHeaders = "defaultRequestHeaders";
+    private const string _timeout = "timeout";
+    private const string _maxConnectionsPerServer = "maxConnectionsPerServer";
+    private const string _cookieContainer = "cookieContainer";
+    private const string _pooledConnectionLifetime = "pooledConnectionLifetime";
+
     public HttpClientCache()
     {
         _httpClients = new SingletonDictionary<HttpClient>(args =>
@@ -33,19 +39,17 @@ public class HttpClientCache : IHttpClientCache
                 argsDict = (Dictionary<string, object>) args.First();
 
                 socketsHandler.PooledConnectionLifetime = GetPooledConnectionLifetime(argsDict);
-                
+
                 if (GetCookieContainer(argsDict))
                     socketsHandler.CookieContainer = new CookieContainer();
 
                 socketsHandler.MaxConnectionsPerServer = GetMaxConnectionsPerServer(argsDict);
             }
 
-            var httpClient = new HttpClient(socketsHandler);
-
-            if (argsDict != null && argsDict.TryGetValue("timeout", out object? timeout))
+            var httpClient = new HttpClient(socketsHandler)
             {
-                httpClient.Timeout = (TimeSpan)timeout;
-            }
+                Timeout = GetTimeout(argsDict)
+            };
 
             AddDefaultRequestHeaders(httpClient, argsDict);
 
@@ -53,11 +57,23 @@ public class HttpClientCache : IHttpClientCache
         });
     }
 
+    private static TimeSpan GetTimeout(Dictionary<string, object>? argsDict)
+    {
+        if (argsDict != null && argsDict.TryGetValue(_timeout, out object? timeout))
+        {
+            if (timeout is TimeSpan timespan)
+                return timespan;
+        }
+
+        return TimeSpan.FromSeconds(100);
+    }
+
     private static void AddDefaultRequestHeaders(HttpClient httpClient, Dictionary<string, object>? argsDict)
     {
-        if (argsDict != null && argsDict.TryGetValue("httpRequestHeaders", out object? httpRequestHeaders))
+        if (argsDict != null && argsDict.TryGetValue(_defaultRequestHeaders, out object? httpRequestHeaders))
         {
-            var headersDict = (Dictionary<string, string>)httpRequestHeaders;
+            if (httpRequestHeaders is not Dictionary<string, string> headersDict)
+                return;
 
             foreach (KeyValuePair<string, string> keyValuePair in headersDict)
             {
@@ -68,7 +84,7 @@ public class HttpClientCache : IHttpClientCache
 
     private static int GetMaxConnectionsPerServer(Dictionary<string, object> argsDict)
     {
-        if (argsDict.TryGetValue("maxConnectionsPerServer", out object? value))
+        if (argsDict.TryGetValue(_maxConnectionsPerServer, out object? value))
         {
             if (value is int maxConnectionsPerServer)
                 return maxConnectionsPerServer;
@@ -79,7 +95,7 @@ public class HttpClientCache : IHttpClientCache
 
     private static bool GetCookieContainer(Dictionary<string, object> args)
     {
-        if (args.TryGetValue("cookieContainer", out object? cookieContainerObj))
+        if (args.TryGetValue(_cookieContainer, out object? cookieContainerObj))
         {
             if (cookieContainerObj is bool cookieContainer)
                 return cookieContainer;
@@ -90,7 +106,7 @@ public class HttpClientCache : IHttpClientCache
 
     private static TimeSpan GetPooledConnectionLifetime(Dictionary<string, object> args)
     {
-        if (args.TryGetValue("pooledConnectionLifetime", out object? timeSpanObj))
+        if (args.TryGetValue(_pooledConnectionLifetime, out object? timeSpanObj))
         {
             if (timeSpanObj is TimeSpan timeSpan)
                 return timeSpan;
@@ -133,19 +149,19 @@ public class HttpClientCache : IHttpClientCache
         var args = new Dictionary<string, object>();
 
         if (pooledConnectionLifetime != null)
-            args.Add(nameof(pooledConnectionLifetime), pooledConnectionLifetime);
+            args.Add(_pooledConnectionLifetime, pooledConnectionLifetime);
 
         if (cookieContainer != null)
-            args.Add(nameof(cookieContainer), cookieContainer);
+            args.Add(_cookieContainer, cookieContainer);
 
         if (maxConnectionsPerServer != null)
-            args.Add(nameof(maxConnectionsPerServer), maxConnectionsPerServer);
+            args.Add(_maxConnectionsPerServer, maxConnectionsPerServer);
 
         if (timeout != null)
-            args.Add(nameof(timeout), timeout);
+            args.Add(_timeout, timeout);
 
         if (defaultRequestHeaders != null)
-            args.Add(nameof(defaultRequestHeaders), defaultRequestHeaders);
+            args.Add(_defaultRequestHeaders, defaultRequestHeaders);
 
         return args;
     }
