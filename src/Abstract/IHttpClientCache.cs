@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -18,15 +19,16 @@ public interface IHttpClientCache : IAsyncDisposable, IDisposable
     /// <param name="cookieContainer">If this is null, cookie support is not enabled</param>
     /// <param name="maxConnectionsPerServer">If this is null, this is set to 40</param>
     /// <param name="timeout">If this is null, this is set to the default 100s</param>
+    /// <param name="defaultRequestHeaders"></param>
     /// <returns></returns>
     [Pure]
-    ValueTask<HttpClient> Get(string id, TimeSpan? pooledConnectionLifetime = null, bool? cookieContainer = null, int? maxConnectionsPerServer = null, TimeSpan? timeout = null);
+    ValueTask<HttpClient> Get(string id, TimeSpan? pooledConnectionLifetime = null, bool? cookieContainer = null, int? maxConnectionsPerServer = null, TimeSpan? timeout = null, Dictionary<string, string>? defaultRequestHeaders = null);
 
-    /// <inheritdoc cref="Get(string, TimeSpan?, bool?, int?, TimeSpan?)"/>"/>
+    /// <inheritdoc cref="Get(string,TimeSpan?,bool?,int?,TimeSpan?,Dictionary{string,string})"/>"/>
     /// <remarks><see cref="Get"/> async method is recommended</remarks>
     [Pure]
     HttpClient GetSync(string id, TimeSpan? pooledConnectionLifetime = null, bool? cookieContainer = null,
-        int? maxConnectionsPerServer = null, TimeSpan? timeout = null);
+        int? maxConnectionsPerServer = null, TimeSpan? timeout = null, Dictionary<string, string>? defaultRequestHeaders = null);
 
     /// <summary>
     /// Should be used if the component using <see cref="IHttpClientCache"/> is disposed (unless the entire app is being disposed). Includes disposal of the <see cref="HttpClient"/>.

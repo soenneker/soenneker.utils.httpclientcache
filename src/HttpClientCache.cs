@@ -42,13 +42,28 @@ public class HttpClientCache : IHttpClientCache
 
             var httpClient = new HttpClient(socketsHandler);
 
-            if (argsDict != null && argsDict.TryGetValue("timeout", out object? value))
+            if (argsDict != null && argsDict.TryGetValue("timeout", out object? timeout))
             {
-                httpClient.Timeout = (TimeSpan) value;
+                httpClient.Timeout = (TimeSpan)timeout;
             }
+
+            AddDefaultRequestHeaders(httpClient, argsDict);
 
             return httpClient;
         });
+    }
+
+    private static void AddDefaultRequestHeaders(HttpClient httpClient, Dictionary<string, object>? argsDict)
+    {
+        if (argsDict != null && argsDict.TryGetValue("httpRequestHeaders", out object? httpRequestHeaders))
+        {
+            var headersDict = (Dictionary<string, string>)httpRequestHeaders;
+
+            foreach (KeyValuePair<string, string> keyValuePair in headersDict)
+            {
+                httpClient.DefaultRequestHeaders.TryAddWithoutValidation(keyValuePair.Key, keyValuePair.Value);
+            }
+        }
     }
 
     private static int GetMaxConnectionsPerServer(Dictionary<string, object> argsDict)
@@ -85,35 +100,35 @@ public class HttpClientCache : IHttpClientCache
     }
 
     public ValueTask<HttpClient> Get(string id, TimeSpan? pooledConnectionLifetime = null, bool? cookieContainer = null,
-        int? maxConnectionsPerServer = null, TimeSpan? timeout = null)
+        int? maxConnectionsPerServer = null, TimeSpan? timeout = null, Dictionary<string, string>? defaultRequestHeaders = null)
     {
-        if (NoConfigIsSet(pooledConnectionLifetime, cookieContainer, maxConnectionsPerServer, timeout))
+        if (NoConfigIsSet(pooledConnectionLifetime, cookieContainer, maxConnectionsPerServer, timeout, defaultRequestHeaders))
             return _httpClients.Get(id);
 
-        Dictionary<string, object> args = GetArgsDict(pooledConnectionLifetime, cookieContainer, maxConnectionsPerServer, timeout);
+        Dictionary<string, object> args = GetArgsDict(pooledConnectionLifetime, cookieContainer, maxConnectionsPerServer, timeout, defaultRequestHeaders);
 
         return _httpClients.Get(id, args);
     }
 
     public HttpClient GetSync(string id, TimeSpan? pooledConnectionLifetime = null, bool? cookieContainer = null,
-        int? maxConnectionsPerServer = null, TimeSpan? timeout = null)
+        int? maxConnectionsPerServer = null, TimeSpan? timeout = null, Dictionary<string, string>? defaultRequestHeaders = null)
     {
-        if (NoConfigIsSet(pooledConnectionLifetime, cookieContainer, maxConnectionsPerServer, timeout))
+        if (NoConfigIsSet(pooledConnectionLifetime, cookieContainer, maxConnectionsPerServer, timeout, defaultRequestHeaders))
             return _httpClients.GetSync(id);
 
-        Dictionary<string, object> args = GetArgsDict(pooledConnectionLifetime, cookieContainer, maxConnectionsPerServer, timeout);
+        Dictionary<string, object> args = GetArgsDict(pooledConnectionLifetime, cookieContainer, maxConnectionsPerServer, timeout, defaultRequestHeaders);
 
         return _httpClients.GetSync(id, args);
     }
 
     private static bool NoConfigIsSet(TimeSpan? pooledConnectionLifetime = null, bool? cookieContainer = null,
-        int? maxConnectionsPerServer = null, TimeSpan? timeout = null)
+        int? maxConnectionsPerServer = null, TimeSpan? timeout = null, Dictionary<string, string>? defaultRequestHeaders = null)
     {
-        return pooledConnectionLifetime == null && cookieContainer == null && maxConnectionsPerServer == null && timeout == null;
+        return pooledConnectionLifetime == null && cookieContainer == null && maxConnectionsPerServer == null && timeout == null && defaultRequestHeaders == null;
     }
 
     private static Dictionary<string, object> GetArgsDict(TimeSpan? pooledConnectionLifetime = null, bool? cookieContainer = null,
-        int? maxConnectionsPerServer = null, TimeSpan? timeout = null)
+        int? maxConnectionsPerServer = null, TimeSpan? timeout = null, Dictionary<string, string>? defaultRequestHeaders = null)
     {
         var args = new Dictionary<string, object>();
 
@@ -128,6 +143,9 @@ public class HttpClientCache : IHttpClientCache
 
         if (timeout != null)
             args.Add(nameof(timeout), timeout);
+
+        if (defaultRequestHeaders != null)
+            args.Add(nameof(defaultRequestHeaders), defaultRequestHeaders);
 
         return args;
     }
