@@ -4,8 +4,8 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Soenneker.Extensions.Enumerable;
 using Soenneker.Utils.HttpClientCache.Abstract;
+using Soenneker.Utils.Runtime;
 using Soenneker.Utils.SingletonDictionary;
 
 namespace Soenneker.Utils.HttpClientCache;
@@ -27,24 +27,11 @@ public class HttpClientCache : IHttpClientCache
         {
             var socketsHandler = new SocketsHttpHandler();
 
-            Dictionary<string, object>? argsDict = null;
+            var argsDict = (Dictionary<string, object>?) args?.FirstOrDefault();
 
-            if (args.IsNullOrEmpty())
-            {
-                socketsHandler.PooledConnectionLifetime = TimeSpan.FromMinutes(10);
-                socketsHandler.MaxConnectionsPerServer = 40;
-            }
-            else
-            {
-                argsDict = (Dictionary<string, object>) args.First();
-
-                socketsHandler.PooledConnectionLifetime = GetPooledConnectionLifetime(argsDict);
-
-                if (GetCookieContainer(argsDict))
-                    socketsHandler.CookieContainer = new CookieContainer();
-
-                socketsHandler.MaxConnectionsPerServer = GetMaxConnectionsPerServer(argsDict);
-            }
+            SetCookieContainer(socketsHandler, argsDict);
+            SetPooledConnectionLifetime(socketsHandler, argsDict);
+            SetMaxConnectionsPerServer(socketsHandler, argsDict);
 
             var httpClient = new HttpClient(socketsHandler)
             {
@@ -57,20 +44,26 @@ public class HttpClientCache : IHttpClientCache
         });
     }
 
-    private static TimeSpan GetTimeout(Dictionary<string, object>? argsDict)
+    private static TimeSpan GetTimeout(Dictionary<string, object>? args)
     {
-        if (argsDict != null && argsDict.TryGetValue(_timeout, out object? timeout))
+        if (args != null)
         {
-            if (timeout is TimeSpan timespan)
-                return timespan;
+            if (args.TryGetValue(_timeout, out object? timeout))
+            {
+                if (timeout is TimeSpan timespan)
+                    return timespan;
+            }
         }
 
         return TimeSpan.FromSeconds(100);
     }
 
-    private static void AddDefaultRequestHeaders(HttpClient httpClient, Dictionary<string, object>? argsDict)
+    private static void AddDefaultRequestHeaders(HttpClient httpClient, Dictionary<string, object>? args)
     {
-        if (argsDict != null && argsDict.TryGetValue(_defaultRequestHeaders, out object? httpRequestHeaders))
+        if (args == null)
+            return;
+
+        if (args.TryGetValue(_defaultRequestHeaders, out object? httpRequestHeaders))
         {
             if (httpRequestHeaders is not Dictionary<string, string> headersDict)
                 return;
@@ -82,37 +75,55 @@ public class HttpClientCache : IHttpClientCache
         }
     }
 
-    private static int GetMaxConnectionsPerServer(Dictionary<string, object> argsDict)
+    private static void SetCookieContainer(SocketsHttpHandler socketsHandler, Dictionary<string, object>? args)
     {
-        if (argsDict.TryGetValue(_maxConnectionsPerServer, out object? value))
-        {
-            if (value is int maxConnectionsPerServer)
-                return maxConnectionsPerServer;
-        }
+        if (args == null)
+            return;
 
-        return 40;
-    }
-
-    private static bool GetCookieContainer(Dictionary<string, object> args)
-    {
         if (args.TryGetValue(_cookieContainer, out object? cookieContainerObj))
         {
             if (cookieContainerObj is bool cookieContainer)
-                return cookieContainer;
+            {
+                if (cookieContainer)
+                {
+                    socketsHandler.CookieContainer = new CookieContainer();
+                }
+            }
         }
-
-        return false;
     }
 
-    private static TimeSpan GetPooledConnectionLifetime(Dictionary<string, object> args)
+    private static void SetPooledConnectionLifetime(SocketsHttpHandler socketsHandler, Dictionary<string, object>? args)
     {
-        if (args.TryGetValue(_pooledConnectionLifetime, out object? timeSpanObj))
+        if (RuntimeUtil.IsBrowser())
+            return;
+
+        if (args != null)
         {
-            if (timeSpanObj is TimeSpan timeSpan)
-                return timeSpan;
+            if (args.TryGetValue(_pooledConnectionLifetime, out object? timeSpanObj))
+            {
+                if (timeSpanObj is TimeSpan timeSpan)
+                    socketsHandler.PooledConnectionLifetime = timeSpan;
+            }
         }
 
-        return TimeSpan.FromMinutes(10);
+        socketsHandler.PooledConnectionLifetime = TimeSpan.FromMinutes(10);
+    }
+
+    private static void SetMaxConnectionsPerServer(SocketsHttpHandler socketsHandler, Dictionary<string, object>? args)
+    {
+        if (RuntimeUtil.IsBrowser())
+            return;
+
+        if (args != null)
+        {
+            if (args.TryGetValue(_maxConnectionsPerServer, out object? value))
+            {
+                if (value is int maxConnectionsPerServer)
+                    socketsHandler.MaxConnectionsPerServer = maxConnectionsPerServer;
+            }
+        }
+
+        socketsHandler.MaxConnectionsPerServer = 40;
     }
 
     public ValueTask<HttpClient> Get(string id, TimeSpan? pooledConnectionLifetime = null, bool? cookieContainer = null,
