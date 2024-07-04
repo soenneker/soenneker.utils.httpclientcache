@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.Contracts;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Soenneker.Utils.HttpClientCache.Abstract;
@@ -20,15 +21,16 @@ public interface IHttpClientCache : IAsyncDisposable, IDisposable
     /// <param name="maxConnectionsPerServer">If this is null, this is set to 40</param>
     /// <param name="timeout">If this is null, this is set to the default 100s</param>
     /// <param name="defaultRequestHeaders"></param>
+    /// <param name="cancellationToken"></param>
     /// <returns></returns>
     [Pure]
-    ValueTask<HttpClient> Get(string id, TimeSpan? pooledConnectionLifetime = null, bool? cookieContainer = null, int? maxConnectionsPerServer = null, TimeSpan? timeout = null, Dictionary<string, string>? defaultRequestHeaders = null);
+    ValueTask<HttpClient> Get(string id, TimeSpan? pooledConnectionLifetime = null, bool? cookieContainer = null, int? maxConnectionsPerServer = null, TimeSpan? timeout = null, Dictionary<string, string>? defaultRequestHeaders = null, CancellationToken cancellationToken = default);
 
-    /// <inheritdoc cref="Get(string,TimeSpan?,bool?,int?,TimeSpan?,Dictionary{string,string})"/>"/>
+    /// <inheritdoc cref="Get(string,TimeSpan?,bool?,int?,TimeSpan?,Dictionary{string,string}, CancellationToken)"/>"/>
     /// <remarks><see cref="Get"/> async method is recommended</remarks>
     [Pure]
     HttpClient GetSync(string id, TimeSpan? pooledConnectionLifetime = null, bool? cookieContainer = null,
-        int? maxConnectionsPerServer = null, TimeSpan? timeout = null, Dictionary<string, string>? defaultRequestHeaders = null);
+        int? maxConnectionsPerServer = null, TimeSpan? timeout = null, Dictionary<string, string>? defaultRequestHeaders = null, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Should be used if the component using <see cref="IHttpClientCache"/> is disposed (unless the entire app is being disposed). Includes disposal of the <see cref="HttpClient"/>.

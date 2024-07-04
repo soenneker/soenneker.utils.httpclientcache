@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using Soenneker.Utils.HttpClientCache.Abstract;
 using Soenneker.Utils.Runtime;
@@ -127,25 +128,25 @@ public class HttpClientCache : IHttpClientCache
     }
 
     public ValueTask<HttpClient> Get(string id, TimeSpan? pooledConnectionLifetime = null, bool? cookieContainer = null,
-        int? maxConnectionsPerServer = null, TimeSpan? timeout = null, Dictionary<string, string>? defaultRequestHeaders = null)
+        int? maxConnectionsPerServer = null, TimeSpan? timeout = null, Dictionary<string, string>? defaultRequestHeaders = null, CancellationToken cancellationToken = default)
     {
         if (NoConfigIsSet(pooledConnectionLifetime, cookieContainer, maxConnectionsPerServer, timeout, defaultRequestHeaders))
-            return _httpClients.Get(id);
+            return _httpClients.Get(id, cancellationToken);
 
         Dictionary<string, object> args = GetArgsDict(pooledConnectionLifetime, cookieContainer, maxConnectionsPerServer, timeout, defaultRequestHeaders);
 
-        return _httpClients.Get(id, args);
+        return _httpClients.Get(id, cancellationToken, args);
     }
 
     public HttpClient GetSync(string id, TimeSpan? pooledConnectionLifetime = null, bool? cookieContainer = null,
-        int? maxConnectionsPerServer = null, TimeSpan? timeout = null, Dictionary<string, string>? defaultRequestHeaders = null)
+        int? maxConnectionsPerServer = null, TimeSpan? timeout = null, Dictionary<string, string>? defaultRequestHeaders = null, CancellationToken cancellationToken = default)
     {
         if (NoConfigIsSet(pooledConnectionLifetime, cookieContainer, maxConnectionsPerServer, timeout, defaultRequestHeaders))
-            return _httpClients.GetSync(id);
+            return _httpClients.GetSync(id, cancellationToken);
 
         Dictionary<string, object> args = GetArgsDict(pooledConnectionLifetime, cookieContainer, maxConnectionsPerServer, timeout, defaultRequestHeaders);
 
-        return _httpClients.GetSync(id, args);
+        return _httpClients.GetSync(id, cancellationToken, args);
     }
 
     private static bool NoConfigIsSet(TimeSpan? pooledConnectionLifetime = null, bool? cookieContainer = null,
