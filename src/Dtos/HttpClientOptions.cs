@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Threading.Tasks;
 
 namespace Soenneker.Utils.HttpClientCache.Dtos;
 
@@ -16,5 +17,5 @@ public record HttpClientOptions
 
     public Dictionary<string, string>? DefaultRequestHeaders { get; set; }
 
-    public Action<HttpClient>? ModifyClient { get; set; }
+    public Func<HttpClient, ValueTask>? ModifyClient { get; set; }
 }

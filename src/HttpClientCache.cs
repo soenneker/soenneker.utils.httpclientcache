@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Soenneker.Extensions.ValueTask;
 using Soenneker.Utils.HttpClientCache.Abstract;
 using Soenneker.Utils.HttpClientCache.Dtos;
 using Soenneker.Utils.Runtime;
@@ -19,7 +20,7 @@ public class HttpClientCache : IHttpClientCache
 
     public HttpClientCache()
     {
-        _httpClients = new SingletonDictionary<HttpClient>(args =>
+        _httpClients = new SingletonDictionary<HttpClient>(async args =>
         {
             var options = args.FirstOrDefault() as HttpClientOptions;
 
@@ -31,7 +32,9 @@ public class HttpClientCache : IHttpClientCache
             };
 
             AddDefaultRequestHeaders(httpClient, options?.DefaultRequestHeaders);
-            options?.ModifyClient?.Invoke(httpClient);
+
+            if (options?.ModifyClient != null)
+                await options.ModifyClient.Invoke(httpClient).NoSync();
 
             return httpClient;
         });
