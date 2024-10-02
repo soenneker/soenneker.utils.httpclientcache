@@ -24,12 +24,24 @@ public class HttpClientCache : IHttpClientCache
         {
             var options = args.FirstOrDefault() as HttpClientOptions;
 
-            SocketsHttpHandler handler = CreateSocketsHttpHandler(options);
+            HttpClient httpClient;
 
-            var httpClient = new HttpClient(handler)
+            if (!RuntimeUtil.IsBrowser())
             {
-                Timeout = options?.Timeout ?? TimeSpan.FromSeconds(100)
-            };
+                SocketsHttpHandler handler = CreateSocketsHttpHandler(options);
+
+                httpClient = new HttpClient(handler)
+                {
+                    Timeout = options?.Timeout ?? TimeSpan.FromSeconds(100)
+                };
+            }
+            else
+            {
+                httpClient = new HttpClient
+                {
+                    Timeout = options?.Timeout ?? TimeSpan.FromSeconds(100)
+                };
+            }
 
             AddDefaultRequestHeaders(httpClient, options?.DefaultRequestHeaders);
 
@@ -60,11 +72,8 @@ public class HttpClientCache : IHttpClientCache
     {
         var handler = new SocketsHttpHandler();
 
-        if (!RuntimeUtil.IsBrowser())
-        {
-            handler.PooledConnectionLifetime = options?.PooledConnectionLifetime ?? TimeSpan.FromMinutes(10);
-            handler.MaxConnectionsPerServer = options?.MaxConnectionsPerServer ?? 40;
-        }
+        handler.PooledConnectionLifetime = options?.PooledConnectionLifetime ?? TimeSpan.FromMinutes(10);
+        handler.MaxConnectionsPerServer = options?.MaxConnectionsPerServer ?? 40;
 
         if (options?.UseCookieContainer == true)
         {
