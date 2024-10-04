@@ -43,6 +43,9 @@ public class HttpClientCache : IHttpClientCache
                 };
             }
 
+            if (options?.BaseAddress != null)
+                httpClient.BaseAddress = new Uri(options.BaseAddress);
+
             AddDefaultRequestHeaders(httpClient, options?.DefaultRequestHeaders);
 
             if (options?.ModifyClient != null)
