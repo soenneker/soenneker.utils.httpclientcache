@@ -51,4 +51,6 @@ public record HttpClientOptions
     /// A value of <see langword="null"/> indicates that no base address will be set.
     /// </summary>
     public string? BaseAddress { get; set; }
+
+    public HttpClientHandler? HttpClientHandler { get; set; }
 }

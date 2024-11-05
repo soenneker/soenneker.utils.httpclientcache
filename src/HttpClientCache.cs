@@ -23,36 +23,26 @@ public class HttpClientCache : IHttpClientCache
         _httpClients = new SingletonDictionary<HttpClient>(async args =>
         {
             var options = args.FirstOrDefault() as HttpClientOptions;
+            HttpClient httpClient = CreateHttpClient(options);
 
-            HttpClient httpClient;
-
-            if (!RuntimeUtil.IsBrowser())
-            {
-                SocketsHttpHandler handler = CreateSocketsHttpHandler(options);
-
-                httpClient = new HttpClient(handler)
-                {
-                    Timeout = options?.Timeout ?? TimeSpan.FromSeconds(100)
-                };
-            }
-            else
-            {
-                httpClient = new HttpClient
-                {
-                    Timeout = options?.Timeout ?? TimeSpan.FromSeconds(100)
-                };
-            }
-
-            if (options?.BaseAddress != null)
-                httpClient.BaseAddress = new Uri(options.BaseAddress);
-
-            AddDefaultRequestHeaders(httpClient, options?.DefaultRequestHeaders);
-
-            if (options?.ModifyClient != null)
-                await options.ModifyClient.Invoke(httpClient).NoSync();
+            await ConfigureHttpClient(httpClient, options).NoSync();
 
             return httpClient;
         });
+    }
+
+    private static HttpClient CreateHttpClient(HttpClientOptions? options)
+    {
+        if (RuntimeUtil.IsBrowser())
+        {
+            return options?.HttpClientHandler != null
+                ? new HttpClient(options.HttpClientHandler)
+                : new HttpClient();
+        }
+
+        return options?.HttpClientHandler != null
+            ? new HttpClient(options.HttpClientHandler)
+            : new HttpClient(CreateSocketsHttpHandler(options));
     }
 
     public ValueTask<HttpClient> Get(string id, HttpClientOptions? options = null, CancellationToken cancellationToken = default)
@@ -69,6 +59,19 @@ public class HttpClientCache : IHttpClientCache
             return _httpClients.GetSync(id, cancellationToken);
 
         return _httpClients.GetSync(id, cancellationToken, options);
+    }
+
+    private static async ValueTask ConfigureHttpClient(HttpClient httpClient, HttpClientOptions? options)
+    {
+        httpClient.Timeout = options?.Timeout ?? TimeSpan.FromSeconds(100);
+
+        if (options?.BaseAddress != null)
+            httpClient.BaseAddress = new Uri(options.BaseAddress);
+
+        AddDefaultRequestHeaders(httpClient, options?.DefaultRequestHeaders);
+
+        if (options?.ModifyClient != null)
+            await options.ModifyClient.Invoke(httpClient).NoSync();
     }
 
     private static SocketsHttpHandler CreateSocketsHttpHandler(HttpClientOptions? options)
