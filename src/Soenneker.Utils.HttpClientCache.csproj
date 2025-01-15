@@ -37,7 +37,7 @@
         <None Include="..\LICENSE" Pack="true" PackagePath="\" />
         <None Include="..\icon.png" Pack="true" PackagePath="\" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.1" />
-        <PackageReference Include="Soenneker.Utils.Runtime" Version="3.0.603" />
+        <PackageReference Include="Soenneker.Utils.Runtime" Version="3.0.606" />
         <PackageReference Include="Soenneker.Utils.SingletonDictionary" Version="3.0.779" />
     </ItemGroup>
 </Project>
