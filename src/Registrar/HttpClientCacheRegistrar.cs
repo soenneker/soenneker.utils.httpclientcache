@@ -12,8 +12,17 @@ public static class HttpClientCacheRegistrar
     /// <summary>
     /// Adds <see cref="HttpClientCache"/> as a singleton to the <see cref="IServiceCollection"/>
     /// </summary>
-    public static void AddHttpClientCache(this IServiceCollection services)
+    public static IServiceCollection AddHttpClientCacheAsSingleton(this IServiceCollection services)
     {
         services.TryAddSingleton<IHttpClientCache, HttpClientCache>();
+
+        return services;
+    }
+
+    public static IServiceCollection AddHttpClientCacheAsScoped(this IServiceCollection services)
+    {
+        services.TryAddScoped<IHttpClientCache, HttpClientCache>();
+
+        return services;
     }
 }

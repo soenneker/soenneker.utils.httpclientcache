@@ -15,7 +15,7 @@ public class HttpClientCacheTests : UnitTest
     {
         var httpClientCache = new HttpClientCache();
 
-        HttpClient httpClient = await httpClientCache.Get("test");
+        HttpClient httpClient = await httpClientCache.Get("test", cancellationToken: CancellationToken);
 
         httpClient.Should().NotBeNull();
     }
@@ -30,7 +30,7 @@ public class HttpClientCacheTests : UnitTest
             Timeout = TimeSpan.FromMinutes(10)
         };
 
-        HttpClient httpClient = await httpClientCache.Get("test", clientOptions);
+        HttpClient httpClient = await httpClientCache.Get("test", clientOptions, CancellationToken);
         httpClient.Should().NotBeNull();
     }
 
@@ -44,10 +44,10 @@ public class HttpClientCacheTests : UnitTest
             Timeout = TimeSpan.FromMinutes(10)
         };
 
-        HttpClient httpClient1 = await httpClientCache.Get("test", clientOptions);
+        HttpClient httpClient1 = await httpClientCache.Get("test", clientOptions, CancellationToken);
         httpClient1.Timeout = TimeSpan.FromMinutes(1);
 
-        HttpClient httpClient2 = await httpClientCache.Get("test", clientOptions);
+        HttpClient httpClient2 = await httpClientCache.Get("test", clientOptions, CancellationToken);
         httpClient2.Timeout.TotalMinutes.Should().Be(1);
     }
 }
