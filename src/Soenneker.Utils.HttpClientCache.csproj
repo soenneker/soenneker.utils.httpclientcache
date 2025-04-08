@@ -38,6 +38,6 @@
         <None Include="..\icon.png" Pack="true" PackagePath="\" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.3" />
         <PackageReference Include="Soenneker.Utils.Runtime" Version="3.0.838" />
-        <PackageReference Include="Soenneker.Utils.SingletonDictionary" Version="3.0.1062" />
+        <PackageReference Include="Soenneker.Utils.SingletonDictionary" Version="3.0.1063" />
     </ItemGroup>
 </Project>
