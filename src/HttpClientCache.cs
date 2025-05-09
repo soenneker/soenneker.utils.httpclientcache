@@ -22,7 +22,20 @@ public class HttpClientCache : IHttpClientCache
     {
         _httpClients = new SingletonDictionary<HttpClient>(async args =>
         {
-            var options = args.FirstOrDefault() as HttpClientOptions;
+            HttpClientOptions? options = null;
+
+            if (args.Length > 0)
+            {
+                object arg = args[0];
+
+                if (arg is Func<ValueTask<HttpClientOptions?>> asyncFactory)
+                    options = await asyncFactory().NoSync();
+                else if (arg is Func<HttpClientOptions?> syncFactory)
+                    options = syncFactory();
+                else if (arg is HttpClientOptions directOptions)
+                    options = directOptions;
+            }
+
             HttpClient httpClient = CreateHttpClient(options);
 
             await ConfigureHttpClient(httpClient, options).NoSync();
@@ -35,14 +48,10 @@ public class HttpClientCache : IHttpClientCache
     {
         if (RuntimeUtil.IsBrowser())
         {
-            return options?.HttpClientHandler != null
-                ? new HttpClient(options.HttpClientHandler)
-                : new HttpClient();
+            return options?.HttpClientHandler != null ? new HttpClient(options.HttpClientHandler) : new HttpClient();
         }
 
-        return options?.HttpClientHandler != null
-            ? new HttpClient(options.HttpClientHandler)
-            : new HttpClient(CreateSocketsHttpHandler(options));
+        return options?.HttpClientHandler != null ? new HttpClient(options.HttpClientHandler) : new HttpClient(CreateSocketsHttpHandler(options));
     }
 
     public ValueTask<HttpClient> Get(string id, HttpClientOptions? options = null, CancellationToken cancellationToken = default)
@@ -53,11 +62,27 @@ public class HttpClientCache : IHttpClientCache
         return _httpClients.Get(id, cancellationToken, options);
     }
 
+    public ValueTask<HttpClient> Get(string id, Func<HttpClientOptions?> optionsFactory, CancellationToken cancellationToken = default)
+    {
+        return _httpClients.Get(id, cancellationToken, optionsFactory);
+    }
+
+    public ValueTask<HttpClient> Get(string id, Func<ValueTask<HttpClientOptions?>> optionsFactory, CancellationToken cancellationToken = default)
+    {
+        return _httpClients.Get(id, cancellationToken, optionsFactory);
+    }
+
     public HttpClient GetSync(string id, HttpClientOptions? options = null, CancellationToken cancellationToken = default)
     {
         if (options == null)
             return _httpClients.GetSync(id, cancellationToken);
 
+        return _httpClients.GetSync(id, cancellationToken, options);
+    }
+
+    public HttpClient GetSync(string id, Func<HttpClientOptions?> optionsFactory, CancellationToken cancellationToken = default)
+    {
+        HttpClientOptions? options = optionsFactory.Invoke();
         return _httpClients.GetSync(id, cancellationToken, options);
     }
 
@@ -76,10 +101,11 @@ public class HttpClientCache : IHttpClientCache
 
     private static SocketsHttpHandler CreateSocketsHttpHandler(HttpClientOptions? options)
     {
-        var handler = new SocketsHttpHandler();
-
-        handler.PooledConnectionLifetime = options?.PooledConnectionLifetime ?? TimeSpan.FromMinutes(10);
-        handler.MaxConnectionsPerServer = options?.MaxConnectionsPerServer ?? 40;
+        var handler = new SocketsHttpHandler
+        {
+            PooledConnectionLifetime = options?.PooledConnectionLifetime ?? TimeSpan.FromMinutes(10),
+            MaxConnectionsPerServer = options?.MaxConnectionsPerServer ?? 40
+        };
 
         if (options?.UseCookieContainer == true)
         {
