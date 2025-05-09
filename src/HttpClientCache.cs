@@ -1,13 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Soenneker.Dtos.HttpClientOptions;
 using Soenneker.Extensions.ValueTask;
 using Soenneker.Utils.HttpClientCache.Abstract;
-using Soenneker.Utils.HttpClientCache.Dtos;
 using Soenneker.Utils.Runtime;
 using Soenneker.Utils.SingletonDictionary;
 

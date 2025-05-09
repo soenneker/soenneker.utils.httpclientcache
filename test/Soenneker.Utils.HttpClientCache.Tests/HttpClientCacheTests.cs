@@ -2,8 +2,8 @@
 using System.Net.Http;
 using System.Threading.Tasks;
 using FluentAssertions;
+using Soenneker.Dtos.HttpClientOptions;
 using Soenneker.Tests.Unit;
-using Soenneker.Utils.HttpClientCache.Dtos;
 using Xunit;
 
 namespace Soenneker.Utils.HttpClientCache.Tests;
