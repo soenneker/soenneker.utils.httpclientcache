@@ -1,14 +1,17 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Net;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
-using Soenneker.Dtos.HttpClientOptions;
+﻿using Soenneker.Dtos.HttpClientOptions;
+using Soenneker.Extensions.Enumerable;
 using Soenneker.Extensions.ValueTask;
 using Soenneker.Utils.HttpClientCache.Abstract;
 using Soenneker.Utils.Runtime;
 using Soenneker.Utils.SingletonDictionary;
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Net;
+using System.Net.Http;
+using System.Runtime.CompilerServices;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace Soenneker.Utils.HttpClientCache;
 
@@ -16,6 +19,8 @@ namespace Soenneker.Utils.HttpClientCache;
 public class HttpClientCache : IHttpClientCache
 {
     private readonly SingletonDictionary<HttpClient> _httpClients;
+
+    private readonly ConcurrentDictionary<HandlerKey, SocketsHttpHandler> _handlers = new();
 
     public HttpClientCache()
     {
@@ -43,14 +48,14 @@ public class HttpClientCache : IHttpClientCache
         });
     }
 
-    private static HttpClient CreateHttpClient(HttpClientOptions? options)
+    private HttpClient CreateHttpClient(HttpClientOptions? options)
     {
         if (RuntimeUtil.IsBrowser())
         {
             return options?.HttpClientHandler != null ? new HttpClient(options.HttpClientHandler) : new HttpClient();
         }
 
-        return options?.HttpClientHandler != null ? new HttpClient(options.HttpClientHandler) : new HttpClient(CreateSocketsHttpHandler(options));
+        return options?.HttpClientHandler != null ? new HttpClient(options.HttpClientHandler) : new HttpClient(GetOrCreateHandler(options));
     }
 
     public ValueTask<HttpClient> Get(string id, HttpClientOptions? options = null, CancellationToken cancellationToken = default)
@@ -85,38 +90,53 @@ public class HttpClientCache : IHttpClientCache
         return _httpClients.GetSync(id, cancellationToken, options);
     }
 
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static async ValueTask ConfigureHttpClient(HttpClient httpClient, HttpClientOptions? options)
     {
         httpClient.Timeout = options?.Timeout ?? TimeSpan.FromSeconds(100);
 
         if (options?.BaseAddress != null)
-            httpClient.BaseAddress = new Uri(options.BaseAddress);
+        {
+            Uri baseUri = new(options.BaseAddress);
+
+            if (!Equals(httpClient.BaseAddress, baseUri))
+                httpClient.BaseAddress = baseUri;
+        }
 
         AddDefaultRequestHeaders(httpClient, options?.DefaultRequestHeaders);
 
-        if (options?.ModifyClient != null)
-            await options.ModifyClient.Invoke(httpClient).NoSync();
+        Func<HttpClient, ValueTask>? modifyClient = options?.ModifyClient;
+
+        if (modifyClient is not null)
+            await modifyClient(httpClient).NoSync();
     }
 
-    private static SocketsHttpHandler CreateSocketsHttpHandler(HttpClientOptions? options)
+    private SocketsHttpHandler GetOrCreateHandler(HttpClientOptions? options)
     {
-        var handler = new SocketsHttpHandler
-        {
-            PooledConnectionLifetime = options?.PooledConnectionLifetime ?? TimeSpan.FromMinutes(10),
-            MaxConnectionsPerServer = options?.MaxConnectionsPerServer ?? 40
-        };
+        var key = new HandlerKey(
+            options?.PooledConnectionLifetime?.TotalSeconds ?? 600,
+            options?.MaxConnectionsPerServer ?? 40,
+            options?.UseCookieContainer == true
+        );
 
-        if (options?.UseCookieContainer == true)
+        return _handlers.GetOrAdd(key, _ =>
         {
-            handler.CookieContainer = new CookieContainer();
-        }
+            var handler = new SocketsHttpHandler
+            {
+                PooledConnectionLifetime = TimeSpan.FromSeconds(key.LifetimeSeconds),
+                MaxConnectionsPerServer = key.MaxConnections
+            };
 
-        return handler;
+            if (key.UseCookies)
+                handler.CookieContainer = new CookieContainer();
+
+            return handler;
+        });
     }
 
     private static void AddDefaultRequestHeaders(HttpClient httpClient, Dictionary<string, string>? headers)
     {
-        if (headers == null)
+        if (headers.IsNullOrEmpty())
             return;
 
         foreach (KeyValuePair<string, string> header in headers)
@@ -138,12 +158,26 @@ public class HttpClientCache : IHttpClientCache
     public ValueTask DisposeAsync()
     {
         GC.SuppressFinalize(this);
+
+        foreach (KeyValuePair<HandlerKey, SocketsHttpHandler> kvp in _handlers.ToArray())
+        {
+            if (_handlers.TryRemove(kvp.Key, out SocketsHttpHandler? handler))
+                handler.Dispose();
+        }
+
         return _httpClients.DisposeAsync();
     }
 
     public void Dispose()
     {
         GC.SuppressFinalize(this);
+
+        foreach (KeyValuePair<HandlerKey, SocketsHttpHandler> kvp in _handlers.ToArray())
+        {
+            if (_handlers.TryRemove(kvp.Key, out SocketsHttpHandler? handler))
+                handler.Dispose();
+        }
+
         _httpClients.Dispose();
     }
 }
