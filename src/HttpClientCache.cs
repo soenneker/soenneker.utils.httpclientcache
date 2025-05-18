@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 namespace Soenneker.Utils.HttpClientCache;
 
 ///<inheritdoc cref="IHttpClientCache"/>
-public class HttpClientCache : IHttpClientCache
+public sealed class HttpClientCache : IHttpClientCache
 {
     private readonly SingletonDictionary<HttpClient> _httpClients;
 
@@ -145,26 +145,30 @@ public class HttpClientCache : IHttpClientCache
         }
     }
 
-    public ValueTask Remove(string id)
+    public ValueTask Remove(string id, CancellationToken cancellationToken = default)
     {
-        return _httpClients.Remove(id);
+        return _httpClients.Remove(id, cancellationToken);
     }
 
-    public void RemoveSync(string id)
+    public void RemoveSync(string id, CancellationToken cancellationToken = default)
     {
-        _httpClients.RemoveSync(id);
+        _httpClients.RemoveSync(id, cancellationToken);
+    }
+
+    private void DisposeHandlers()
+    {
+        foreach (KeyValuePair<HandlerKey, SocketsHttpHandler> kvp in _handlers.ToArray())
+        {
+            if (_handlers.TryRemove(kvp.Key, out SocketsHttpHandler? handler))
+                handler.Dispose();
+        }
     }
 
     public ValueTask DisposeAsync()
     {
         GC.SuppressFinalize(this);
 
-        foreach (KeyValuePair<HandlerKey, SocketsHttpHandler> kvp in _handlers.ToArray())
-        {
-            if (_handlers.TryRemove(kvp.Key, out SocketsHttpHandler? handler))
-                handler.Dispose();
-        }
-
+        DisposeHandlers();
         return _httpClients.DisposeAsync();
     }
 
@@ -172,12 +176,7 @@ public class HttpClientCache : IHttpClientCache
     {
         GC.SuppressFinalize(this);
 
-        foreach (KeyValuePair<HandlerKey, SocketsHttpHandler> kvp in _handlers.ToArray())
-        {
-            if (_handlers.TryRemove(kvp.Key, out SocketsHttpHandler? handler))
-                handler.Dispose();
-        }
-
+        DisposeHandlers();
         _httpClients.Dispose();
     }
 }

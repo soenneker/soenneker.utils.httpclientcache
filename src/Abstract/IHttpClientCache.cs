@@ -59,8 +59,9 @@ public interface IHttpClientCache : IAsyncDisposable, IDisposable
     /// Should be used if the component using <see cref="IHttpClientCache"/> is disposed (unless the entire app is being disposed). Includes disposal of the <see cref="HttpClient"/>.
     /// </summary>
     /// <param name="id">The cache key</param>
-    ValueTask Remove(string id);
+    /// <param name="cancellationToken"></param>
+    ValueTask Remove(string id, CancellationToken cancellationToken = default);
 
-    /// <inheritdoc cref="Remove(string)"/>
-    void RemoveSync(string id);
+    /// <inheritdoc cref="Remove(string,CancellationToken)"/>
+    void RemoveSync(string id, CancellationToken cancellationToken = default);
 }
