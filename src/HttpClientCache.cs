@@ -52,10 +52,12 @@ public sealed class HttpClientCache : IHttpClientCache
     {
         if (RuntimeUtil.IsBrowser())
         {
-            return options?.HttpClientHandler != null ? new HttpClient(options.HttpClientHandler) : new HttpClient();
+            return options?.HttpClientHandler != null ? new HttpClient(options.HttpClientHandler, disposeHandler: false) : new HttpClient();
         }
 
-        return options?.HttpClientHandler != null ? new HttpClient(options.HttpClientHandler) : new HttpClient(GetOrCreateHandler(options));
+        return options?.HttpClientHandler != null
+            ? new HttpClient(options.HttpClientHandler, disposeHandler: false)
+            : new HttpClient(GetOrCreateHandler(options), disposeHandler: false);
     }
 
     public ValueTask<HttpClient> Get(string id, HttpClientOptions? options = null, CancellationToken cancellationToken = default)
@@ -113,11 +115,8 @@ public sealed class HttpClientCache : IHttpClientCache
 
     private SocketsHttpHandler GetOrCreateHandler(HttpClientOptions? options)
     {
-        var key = new HandlerKey(
-            options?.PooledConnectionLifetime?.TotalSeconds ?? 600,
-            options?.MaxConnectionsPerServer ?? 40,
-            options?.UseCookieContainer == true
-        );
+        var key = new HandlerKey(options?.PooledConnectionLifetime?.TotalSeconds ?? 600, options?.MaxConnectionsPerServer ?? 40,
+            options?.UseCookieContainer == true);
 
         return _handlers.GetOrAdd(key, _ =>
         {
