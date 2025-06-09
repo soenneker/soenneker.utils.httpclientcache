@@ -165,16 +165,12 @@ public sealed class HttpClientCache : IHttpClientCache
 
     public ValueTask DisposeAsync()
     {
-        GC.SuppressFinalize(this);
-
         DisposeHandlers();
         return _httpClients.DisposeAsync();
     }
 
     public void Dispose()
     {
-        GC.SuppressFinalize(this);
-
         DisposeHandlers();
         _httpClients.Dispose();
     }
