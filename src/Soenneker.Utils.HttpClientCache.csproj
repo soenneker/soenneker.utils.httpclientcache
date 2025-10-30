@@ -38,7 +38,7 @@
         <None Include="..\icon.png" Pack="true" PackagePath="\" />
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="9.0.10" />
         <PackageReference Include="Soenneker.Dtos.HttpClientOptions" Version="4.0.7" />
-        <PackageReference Include="Soenneker.Utils.Runtime" Version="3.0.870" />
+        <PackageReference Include="Soenneker.Utils.Runtime" Version="4.0.875" />
         <PackageReference Include="Soenneker.Utils.SingletonDictionary" Version="4.0.1110" />
     </ItemGroup>
 </Project>
