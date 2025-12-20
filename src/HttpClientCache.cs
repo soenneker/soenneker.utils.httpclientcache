@@ -18,35 +18,57 @@ namespace Soenneker.Utils.HttpClientCache;
 ///<inheritdoc cref="IHttpClientCache"/>
 public sealed class HttpClientCache : IHttpClientCache
 {
-    private readonly SingletonDictionary<HttpClient> _httpClients;
-
+    private readonly SingletonDictionary<HttpClient, Func<CancellationToken, ValueTask<HttpClientOptions?>>> _httpClients;
     private readonly ConcurrentDictionary<HandlerKey, SocketsHttpHandler> _handlers = new();
+
+    private static readonly Func<CancellationToken, ValueTask<HttpClientOptions?>> _nullOptionsFactory = static _ => default;
 
     public HttpClientCache()
     {
-        _httpClients = new SingletonDictionary<HttpClient>(async args =>
-        {
-            HttpClientOptions? options = null;
-
-            if (args.Length > 0)
+        // We need the token-aware init path so we can call optionsFactory(token).
+        _httpClients =
+            new SingletonDictionary<HttpClient, Func<CancellationToken, ValueTask<HttpClientOptions?>>>(async (id, cancellationToken, optionsFactory) =>
             {
-                object arg = args[0];
+                HttpClientOptions? options = await optionsFactory(cancellationToken)
+                    .NoSync();
 
-                if (arg is Func<ValueTask<HttpClientOptions?>> asyncFactory)
-                    options = await asyncFactory().NoSync();
-                else if (arg is Func<HttpClientOptions?> syncFactory)
-                    options = syncFactory();
-                else if (arg is HttpClientOptions directOptions)
-                    options = directOptions;
-            }
+                HttpClient httpClient = CreateHttpClient(options);
 
-            HttpClient httpClient = CreateHttpClient(options);
+                await ConfigureHttpClient(httpClient, options)
+                    .NoSync();
 
-            await ConfigureHttpClient(httpClient, options).NoSync();
-
-            return httpClient;
-        });
+                return httpClient;
+            });
     }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ValueTask<HttpClient> Get(string id, CancellationToken cancellationToken = default) =>
+        _httpClients.Get(id, () => _nullOptionsFactory, cancellationToken);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ValueTask<HttpClient> Get(string id, Func<CancellationToken, ValueTask<HttpClientOptions?>> optionsFactory,
+        CancellationToken cancellationToken = default) => _httpClients.Get(id, () => optionsFactory, cancellationToken);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ValueTask<HttpClient> Get(string id, Func<HttpClientOptions?> optionsFactory, CancellationToken cancellationToken = default) =>
+        _httpClients.Get(id, () => _ => new ValueTask<HttpClientOptions?>(optionsFactory()), cancellationToken);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ValueTask<HttpClient> Get(string id, Func<ValueTask<HttpClientOptions?>> optionsFactory, CancellationToken cancellationToken = default) =>
+        _httpClients.Get(id, () => _ => optionsFactory(), cancellationToken);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public HttpClient GetSync(string id, CancellationToken cancellationToken = default) =>
+        _httpClients.GetSync(id, () => _nullOptionsFactory, cancellationToken);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public HttpClient GetSync(
+        string id, Func<CancellationToken, ValueTask<HttpClientOptions?>> optionsFactory, CancellationToken cancellationToken = default) =>
+        _httpClients.GetSync(id, () => optionsFactory, cancellationToken);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public HttpClient GetSync(string id, Func<HttpClientOptions?> optionsFactory, CancellationToken cancellationToken = default) =>
+        _httpClients.GetSync(id, () => _ => new ValueTask<HttpClientOptions?>(optionsFactory()), cancellationToken);
 
     private HttpClient CreateHttpClient(HttpClientOptions? options)
     {
@@ -58,38 +80,6 @@ public sealed class HttpClientCache : IHttpClientCache
         return options?.HttpClientHandler != null
             ? new HttpClient(options.HttpClientHandler, disposeHandler: false)
             : new HttpClient(GetOrCreateHandler(options), disposeHandler: false);
-    }
-
-    public ValueTask<HttpClient> Get(string id, HttpClientOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        if (options == null)
-            return _httpClients.Get(id, cancellationToken);
-
-        return _httpClients.Get(id, cancellationToken, options);
-    }
-
-    public ValueTask<HttpClient> Get(string id, Func<HttpClientOptions?> optionsFactory, CancellationToken cancellationToken = default)
-    {
-        return _httpClients.Get(id, cancellationToken, optionsFactory);
-    }
-
-    public ValueTask<HttpClient> Get(string id, Func<ValueTask<HttpClientOptions?>> optionsFactory, CancellationToken cancellationToken = default)
-    {
-        return _httpClients.Get(id, cancellationToken, optionsFactory);
-    }
-
-    public HttpClient GetSync(string id, HttpClientOptions? options = null, CancellationToken cancellationToken = default)
-    {
-        if (options == null)
-            return _httpClients.GetSync(id, cancellationToken);
-
-        return _httpClients.GetSync(id, cancellationToken, options);
-    }
-
-    public HttpClient GetSync(string id, Func<HttpClientOptions?> optionsFactory, CancellationToken cancellationToken = default)
-    {
-        HttpClientOptions? options = optionsFactory.Invoke();
-        return _httpClients.GetSync(id, cancellationToken, options);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -110,7 +100,8 @@ public sealed class HttpClientCache : IHttpClientCache
         Func<HttpClient, ValueTask>? modifyClient = options?.ModifyClient;
 
         if (modifyClient is not null)
-            await modifyClient(httpClient).NoSync();
+            await modifyClient(httpClient)
+                .NoSync();
     }
 
     private SocketsHttpHandler GetOrCreateHandler(HttpClientOptions? options)
@@ -139,20 +130,12 @@ public sealed class HttpClientCache : IHttpClientCache
             return;
 
         foreach (KeyValuePair<string, string> header in headers)
-        {
             httpClient.DefaultRequestHeaders.TryAddWithoutValidation(header.Key, header.Value);
-        }
     }
 
-    public ValueTask Remove(string id, CancellationToken cancellationToken = default)
-    {
-        return _httpClients.Remove(id, cancellationToken);
-    }
+    public ValueTask Remove(string id, CancellationToken cancellationToken = default) => _httpClients.Remove(id, cancellationToken);
 
-    public void RemoveSync(string id, CancellationToken cancellationToken = default)
-    {
-        _httpClients.RemoveSync(id, cancellationToken);
-    }
+    public void RemoveSync(string id, CancellationToken cancellationToken = default) => _httpClients.RemoveSync(id, cancellationToken);
 
     private void DisposeHandlers()
     {
