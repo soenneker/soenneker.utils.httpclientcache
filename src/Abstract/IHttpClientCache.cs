@@ -13,6 +13,24 @@ namespace Soenneker.Utils.HttpClientCache.Abstract;
 public interface IHttpClientCache : IAsyncDisposable, IDisposable
 {
     /// <summary>
+    /// Retrieves an <see cref="HttpClient"/> with default options.
+    /// </summary>
+    /// <param name="id">The cache key</param>
+    /// <param name="cancellationToken"></param>
+    [Pure]
+    ValueTask<HttpClient> Get(string id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves an <see cref="HttpClient"/> using an asynchronous factory to provide <see cref="HttpClientOptions"/>.
+    /// Factory is only invoked if the client doesn't exist in the cache.
+    /// </summary>
+    /// <param name="id">The cache key</param>
+    /// <param name="optionsFactory">An asynchronous delegate that returns the options</param>
+    /// <param name="cancellationToken"></param>
+    [Pure]
+    ValueTask<HttpClient> Get(string id, Func<CancellationToken, ValueTask<HttpClientOptions?>> optionsFactory, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Retrieves an <see cref="HttpClient"/> using a synchronous factory to provide <see cref="HttpClientOptions"/>.
     /// Factory is only invoked if the client doesn't exist in the cache.
     /// </summary>
@@ -32,6 +50,31 @@ public interface IHttpClientCache : IAsyncDisposable, IDisposable
     [Pure]
     ValueTask<HttpClient> Get(string id, Func<ValueTask<HttpClientOptions?>> optionsFactory, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Retrieves an <see cref="HttpClient"/> with default options synchronously.
+    /// </summary>
+    /// <param name="id">The cache key</param>
+    /// <param name="cancellationToken"></param>
+    [Pure]
+    HttpClient GetSync(string id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves an <see cref="HttpClient"/> using an asynchronous factory to provide <see cref="HttpClientOptions"/> synchronously.
+    /// Factory is only invoked if the client doesn't exist in the cache.
+    /// </summary>
+    /// <param name="id">The cache key</param>
+    /// <param name="optionsFactory">An asynchronous delegate that returns the options</param>
+    /// <param name="cancellationToken"></param>
+    [Pure]
+    HttpClient GetSync(string id, Func<CancellationToken, ValueTask<HttpClientOptions?>> optionsFactory, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Retrieves an <see cref="HttpClient"/> using a synchronous factory to provide <see cref="HttpClientOptions"/> synchronously.
+    /// Factory is only invoked if the client doesn't exist in the cache.
+    /// </summary>
+    /// <param name="id">The cache key</param>
+    /// <param name="optionsFactory">A synchronous delegate that returns the options</param>
+    /// <param name="cancellationToken"></param>
     [Pure]
     HttpClient GetSync(string id, Func<HttpClientOptions?> optionsFactory, CancellationToken cancellationToken = default);
 
