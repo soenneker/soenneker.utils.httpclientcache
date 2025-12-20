@@ -27,7 +27,7 @@ public sealed class HttpClientCache : IHttpClientCache
     {
         // We need the token-aware init path so we can call optionsFactory(token).
         _httpClients =
-            new SingletonDictionary<HttpClient, Func<CancellationToken, ValueTask<HttpClientOptions?>>>(async (id, cancellationToken, optionsFactory) =>
+            new SingletonDictionary<HttpClient, Func<CancellationToken, ValueTask<HttpClientOptions?>>>(async (_, cancellationToken, optionsFactory) =>
             {
                 HttpClientOptions? options = await optionsFactory(cancellationToken)
                     .NoSync();
