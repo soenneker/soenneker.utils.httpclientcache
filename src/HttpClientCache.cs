@@ -106,19 +106,69 @@ public sealed class HttpClientCache : IHttpClientCache
 
     private SocketsHttpHandler GetOrCreateHandler(HttpClientOptions? options)
     {
-        var key = new HandlerKey(options?.PooledConnectionLifetime?.TotalSeconds ?? 600, options?.MaxConnectionsPerServer ?? 40,
-            options?.UseCookieContainer == true);
+        double connectTimeoutSeconds = options?.Timeout?.TotalSeconds ?? 100;
+        
+        var key = new HandlerKey(
+            LifetimeSeconds: options?.PooledConnectionLifetime?.TotalSeconds ?? 600,
+            MaxConnections: options?.MaxConnectionsPerServer ?? 40,
+            UseCookies: options?.UseCookieContainer == true,
+            ConnectTimeoutSeconds: connectTimeoutSeconds,
+            ResponseDrainTimeoutSeconds: options?.ResponseDrainTimeout?.TotalSeconds,
+            AllowAutoRedirect: options?.AllowAutoRedirect,
+            AutomaticDecompression: (int?)options?.AutomaticDecompression,
+            KeepAlivePingDelaySeconds: options?.KeepAlivePingDelay?.TotalSeconds,
+            KeepAlivePingTimeoutSeconds: options?.KeepAlivePingTimeout?.TotalSeconds,
+            KeepAlivePingPolicy: (int?)options?.KeepAlivePingPolicy,
+            UseProxy: options?.UseProxy,
+            ProxyHashCode: options?.Proxy?.GetHashCode(),
+            MaxResponseDrainSize: options?.MaxResponseDrainSize,
+            MaxResponseHeadersLength: options?.MaxResponseHeadersLength,
+            SslOptionsHashCode: options?.SslOptions?.GetHashCode());
 
         return _handlers.GetOrAdd(key, _ =>
         {
             var handler = new SocketsHttpHandler
             {
                 PooledConnectionLifetime = TimeSpan.FromSeconds(key.LifetimeSeconds),
-                MaxConnectionsPerServer = key.MaxConnections
+                MaxConnectionsPerServer = key.MaxConnections,
+                ConnectTimeout = TimeSpan.FromSeconds(key.ConnectTimeoutSeconds)
             };
 
             if (key.UseCookies)
                 handler.CookieContainer = new CookieContainer();
+
+            if (key.ResponseDrainTimeoutSeconds.HasValue)
+                handler.ResponseDrainTimeout = TimeSpan.FromSeconds(key.ResponseDrainTimeoutSeconds.Value);
+
+            if (key.AllowAutoRedirect.HasValue)
+                handler.AllowAutoRedirect = key.AllowAutoRedirect.Value;
+
+            if (key.AutomaticDecompression.HasValue)
+                handler.AutomaticDecompression = (DecompressionMethods)key.AutomaticDecompression.Value;
+
+            if (key.KeepAlivePingDelaySeconds.HasValue)
+                handler.KeepAlivePingDelay = TimeSpan.FromSeconds(key.KeepAlivePingDelaySeconds.Value);
+
+            if (key.KeepAlivePingTimeoutSeconds.HasValue)
+                handler.KeepAlivePingTimeout = TimeSpan.FromSeconds(key.KeepAlivePingTimeoutSeconds.Value);
+
+            if (key.KeepAlivePingPolicy.HasValue)
+                handler.KeepAlivePingPolicy = (HttpKeepAlivePingPolicy)key.KeepAlivePingPolicy.Value;
+
+            if (key.UseProxy.HasValue)
+                handler.UseProxy = key.UseProxy.Value;
+
+            if (options?.Proxy != null)
+                handler.Proxy = options.Proxy;
+
+            if (key.MaxResponseDrainSize.HasValue)
+                handler.MaxResponseDrainSize = key.MaxResponseDrainSize.Value;
+
+            if (key.MaxResponseHeadersLength.HasValue)
+                handler.MaxResponseHeadersLength = key.MaxResponseHeadersLength.Value;
+
+            if (options?.SslOptions != null)
+                handler.SslOptions = options.SslOptions;
 
             return handler;
         });
