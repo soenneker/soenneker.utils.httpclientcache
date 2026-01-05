@@ -1,18 +1,22 @@
-﻿namespace Soenneker.Utils.HttpClientCache;
+﻿using System.Net;
+using System.Net.Http;
+using System.Net.Security;
+
+namespace Soenneker.Utils.HttpClientCache;
 
 internal readonly record struct HandlerKey(
-    double LifetimeSeconds,
-    int MaxConnections,
+    long PooledConnectionLifetimeTicks,
+    int MaxConnectionsPerServer,
     bool UseCookies,
-    double ConnectTimeoutSeconds,
-    double? ResponseDrainTimeoutSeconds,
+    long ConnectTimeoutTicks,
+    long? ResponseDrainTimeoutTicks,
     bool? AllowAutoRedirect,
-    int? AutomaticDecompression,
-    double? KeepAlivePingDelaySeconds,
-    double? KeepAlivePingTimeoutSeconds,
-    int? KeepAlivePingPolicy,
+    DecompressionMethods? AutomaticDecompression,
+    long? KeepAlivePingDelayTicks,
+    long? KeepAlivePingTimeoutTicks,
+    HttpKeepAlivePingPolicy? KeepAlivePingPolicy,
     bool? UseProxy,
-    int? ProxyHashCode,
+    IWebProxy? Proxy,
     int? MaxResponseDrainSize,
     int? MaxResponseHeadersLength,
-    int? SslOptionsHashCode);
+    SslClientAuthenticationOptions? SslOptions);

@@ -79,6 +79,22 @@ public interface IHttpClientCache : IAsyncDisposable, IDisposable
     HttpClient GetSync(string id, Func<HttpClientOptions?> optionsFactory, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Retrieves a configured and ready-to-use synchronous instance of <see cref="HttpClient"/> associated with the
+    /// specified identifier.
+    /// </summary>
+    /// <remarks>This method blocks until the client is fully configured and available. If the options factory
+    /// performs asynchronous operations, they will be completed before the client is returned. The returned <see
+    /// cref="HttpClient"/> is intended for reuse and should not be disposed by the caller.</remarks>
+    /// <param name="id">The unique identifier for the <see cref="HttpClient"/> instance to retrieve. Cannot be null or empty.</param>
+    /// <param name="optionsFactory">A factory delegate that asynchronously provides <see cref="HttpClientOptions"/> for configuring the client. The
+    /// returned options may be null to use default settings.</param>
+    /// <param name="cancellationToken">A cancellation token that can be used to cancel the operation before completion. Optional.</param>
+    /// <returns>An <see cref="HttpClient"/> instance configured according to the provided options. The same instance may be
+    /// returned for repeated calls with the same identifier.</returns>
+    [Pure]
+    HttpClient GetSync(string id, Func<ValueTask<HttpClientOptions?>> optionsFactory, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Should be used if the component using <see cref="IHttpClientCache"/> is disposed (unless the entire app is being disposed). Includes disposal of the <see cref="HttpClient"/>.
     /// </summary>
     /// <param name="id">The cache key</param>
