@@ -65,6 +65,21 @@ public sealed class HttpClientCache : IHttpClientCache
         _httpClients.Get(id, OptionsFactory.From(optionsFactory), cancellationToken);
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ValueTask<HttpClient> Get<TState>(string id, TState state, Func<TState, HttpClientOptions?> optionsFactory,
+        CancellationToken cancellationToken = default) where TState : notnull =>
+        _httpClients.Get(id, (state, optionsFactory), static s => OptionsFactory.From(s.state, s.optionsFactory), cancellationToken);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ValueTask<HttpClient> Get<TState>(string id, TState state, Func<TState, ValueTask<HttpClientOptions?>> optionsFactory,
+        CancellationToken cancellationToken = default) where TState : notnull =>
+        _httpClients.Get(id, (state, optionsFactory), static s => OptionsFactory.From(s.state, s.optionsFactory), cancellationToken);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public ValueTask<HttpClient> Get<TState>(string id, TState state, Func<TState, CancellationToken, ValueTask<HttpClientOptions?>> optionsFactory,
+        CancellationToken cancellationToken = default) where TState : notnull =>
+        _httpClients.Get(id, (state, optionsFactory), static s => OptionsFactory.From(s.state, s.optionsFactory), cancellationToken);
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public HttpClient GetSync(string id, CancellationToken cancellationToken = default) =>
         _httpClients.GetSync(id, OptionsFactory.Null, cancellationToken);
 
@@ -101,7 +116,7 @@ public sealed class HttpClientCache : IHttpClientCache
         httpClient.Timeout = options?.Timeout ?? _defaultTimeout;
 
         // Prefer Uri to avoid parsing/allocation.
-        Uri? baseUri = options?.BaseAddressUri;
+        Uri? baseUri = options?.BaseAddress;
 
         if (baseUri is not null && !Equals(httpClient.BaseAddress, baseUri))
             httpClient.BaseAddress = baseUri;
