@@ -1,11 +1,10 @@
 ﻿using Soenneker.Dtos.HttpClientOptions;
 using Soenneker.Extensions.Enumerable;
 using Soenneker.Extensions.ValueTask;
+using Soenneker.Dictionaries.SingletonKeys;
 using Soenneker.Utils.HttpClientCache.Abstract;
 using Soenneker.Utils.Runtime;
-using Soenneker.Utils.SingletonDictionary;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
@@ -13,6 +12,7 @@ using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using Soenneker.Dictionaries.Singletons;
 
 namespace Soenneker.Utils.HttpClientCache;
 
@@ -20,7 +20,7 @@ namespace Soenneker.Utils.HttpClientCache;
 public sealed class HttpClientCache : IHttpClientCache
 {
     private readonly SingletonDictionary<HttpClient, OptionsFactory> _httpClients;
-    private readonly ConcurrentDictionary<HandlerKey, SocketsHttpHandler> _handlers = new();
+    private readonly SingletonKeyDictionary<HandlerKey, SocketsHttpHandler> _handlers;
 
     private static readonly bool _isBrowser = RuntimeUtil.IsBrowser();
 
@@ -32,9 +32,12 @@ public sealed class HttpClientCache : IHttpClientCache
     {
         // Use method group to avoid a closure and still access instance state.
         _httpClients = new SingletonDictionary<HttpClient, OptionsFactory>(InitializeHttpClient);
+
+        // Handlers are expensive and should be reused; use a keyed singleton dictionary to guarantee a single handler per key.
+        _handlers = new SingletonKeyDictionary<HandlerKey, SocketsHttpHandler>(static k => CreateHandlerFromKey(in k));
     }
 
-    private async ValueTask<HttpClient> InitializeHttpClient(string _, CancellationToken cancellationToken, OptionsFactory factory)
+    private async ValueTask<HttpClient> InitializeHttpClient(string _, OptionsFactory factory, CancellationToken cancellationToken)
     {
         HttpClientOptions? options = await factory.Invoke(cancellationToken)
                                                   .NoSync();
@@ -144,8 +147,7 @@ public sealed class HttpClientCache : IHttpClientCache
             KeepAlivePingPolicy: options?.KeepAlivePingPolicy, UseProxy: options?.UseProxy, Proxy: proxy, MaxResponseDrainSize: options?.MaxResponseDrainSize,
             MaxResponseHeadersLength: options?.MaxResponseHeadersLength, SslOptions: sslOptions);
 
-        // static factory => no closure allocation
-        return _handlers.GetOrAdd(key, static k => CreateHandlerFromKey(k));
+        return _handlers.GetSync(key);
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -212,24 +214,15 @@ public sealed class HttpClientCache : IHttpClientCache
     public void RemoveSync(string id, CancellationToken cancellationToken = default) =>
         _httpClients.RemoveSync(id, cancellationToken);
 
-    private void DisposeHandlers()
+    public async ValueTask DisposeAsync()
     {
-        foreach (KeyValuePair<HandlerKey, SocketsHttpHandler> kvp in _handlers)
-        {
-            if (_handlers.TryRemove(kvp.Key, out SocketsHttpHandler? handler))
-                handler.Dispose();
-        }
-    }
-
-    public ValueTask DisposeAsync()
-    {
-        DisposeHandlers();
-        return _httpClients.DisposeAsync();
+        await _handlers.DisposeAsync();
+        await _httpClients.DisposeAsync();
     }
 
     public void Dispose()
     {
-        DisposeHandlers();
+        _handlers.Dispose();
         _httpClients.Dispose();
     }
 }
