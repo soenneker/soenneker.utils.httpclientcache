@@ -8,7 +8,6 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
-using System.Net.Security;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
@@ -107,9 +106,16 @@ public sealed class HttpClientCache : IHttpClientCache
             return options?.HttpClientHandler != null ? new HttpClient(options.HttpClientHandler, disposeHandler: false) : new HttpClient();
         }
 
-        return options?.HttpClientHandler != null
-            ? new HttpClient(options.HttpClientHandler, disposeHandler: false)
-            : new HttpClient(GetOrCreateHandler(options), disposeHandler: false);
+        if (options?.HttpClientHandler != null)
+            return new HttpClient(options.HttpClientHandler, disposeHandler: false);
+
+        // If caller supplies per-client proxy/SSL options, do NOT put those into the shared handler cache key
+        // (it’s a common source of unbounded handler growth when options instances are created per call).
+        // Instead, create a dedicated handler and attach it to the HttpClient so it will be disposed when the client is disposed.
+        if (options?.Proxy is not null || options?.SslOptions is not null)
+            return new HttpClient(CreateHandler(options), disposeHandler: true);
+
+        return new HttpClient(GetOrCreateHandler(options), disposeHandler: false);
     }
 
     // Remove async state machine when ModifyClient is null.
@@ -135,17 +141,13 @@ public sealed class HttpClientCache : IHttpClientCache
         // Do NOT tie connect timeout to request timeout.
         TimeSpan connectTimeout = options?.ConnectTimeout ?? _defaultConnectTimeout;
 
-        // Extract refs so they become part of the key (no closure, no hash-key risk)
-        IWebProxy? proxy = options?.Proxy;
-        SslClientAuthenticationOptions? sslOptions = options?.SslOptions;
-
         var key = new HandlerKey(PooledConnectionLifetimeTicks: (options?.PooledConnectionLifetime ?? _defaultPooledLifetime).Ticks,
             MaxConnectionsPerServer: options?.MaxConnectionsPerServer ?? 40, UseCookies: options?.UseCookieContainer == true,
             ConnectTimeoutTicks: connectTimeout.Ticks, ResponseDrainTimeoutTicks: options?.ResponseDrainTimeout?.Ticks,
             AllowAutoRedirect: options?.AllowAutoRedirect, AutomaticDecompression: options?.AutomaticDecompression,
             KeepAlivePingDelayTicks: options?.KeepAlivePingDelay?.Ticks, KeepAlivePingTimeoutTicks: options?.KeepAlivePingTimeout?.Ticks,
-            KeepAlivePingPolicy: options?.KeepAlivePingPolicy, UseProxy: options?.UseProxy, Proxy: proxy, MaxResponseDrainSize: options?.MaxResponseDrainSize,
-            MaxResponseHeadersLength: options?.MaxResponseHeadersLength, SslOptions: sslOptions);
+            KeepAlivePingPolicy: options?.KeepAlivePingPolicy, UseProxy: options?.UseProxy, MaxResponseDrainSize: options?.MaxResponseDrainSize,
+            MaxResponseHeadersLength: options?.MaxResponseHeadersLength);
 
         return _handlers.GetSync(key);
     }
@@ -184,17 +186,61 @@ public sealed class HttpClientCache : IHttpClientCache
         if (key.UseProxy.HasValue)
             handler.UseProxy = key.UseProxy.Value;
 
-        if (key.Proxy is not null)
-            handler.Proxy = key.Proxy;
-
         if (key.MaxResponseDrainSize.HasValue)
             handler.MaxResponseDrainSize = key.MaxResponseDrainSize.Value;
 
         if (key.MaxResponseHeadersLength.HasValue)
             handler.MaxResponseHeadersLength = key.MaxResponseHeadersLength.Value;
 
-        if (key.SslOptions is not null)
-            handler.SslOptions = key.SslOptions;
+        return handler;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static SocketsHttpHandler CreateHandler(HttpClientOptions? options)
+    {
+        // Dedicated handler for per-client settings (proxy/SSL). Keep it consistent with CreateHandlerFromKey defaults.
+        var handler = new SocketsHttpHandler
+        {
+            PooledConnectionLifetime = options?.PooledConnectionLifetime ?? _defaultPooledLifetime,
+            MaxConnectionsPerServer = options?.MaxConnectionsPerServer ?? 40,
+            ConnectTimeout = options?.ConnectTimeout ?? _defaultConnectTimeout
+        };
+
+        if (options?.UseCookieContainer == true)
+            handler.CookieContainer = new CookieContainer();
+
+        if (options?.ResponseDrainTimeout is { } responseDrainTimeout)
+            handler.ResponseDrainTimeout = responseDrainTimeout;
+
+        if (options?.AllowAutoRedirect is { } allowAutoRedirect)
+            handler.AllowAutoRedirect = allowAutoRedirect;
+
+        if (options?.AutomaticDecompression is { } decompression)
+            handler.AutomaticDecompression = decompression;
+
+        if (options?.KeepAlivePingDelay is { } keepAlivePingDelay)
+            handler.KeepAlivePingDelay = keepAlivePingDelay;
+
+        if (options?.KeepAlivePingTimeout is { } keepAlivePingTimeout)
+            handler.KeepAlivePingTimeout = keepAlivePingTimeout;
+
+        if (options?.KeepAlivePingPolicy is { } keepAlivePingPolicy)
+            handler.KeepAlivePingPolicy = keepAlivePingPolicy;
+
+        if (options?.UseProxy is { } useProxy)
+            handler.UseProxy = useProxy;
+
+        if (options?.Proxy is not null)
+            handler.Proxy = options.Proxy;
+
+        if (options?.MaxResponseDrainSize is { } maxResponseDrainSize)
+            handler.MaxResponseDrainSize = maxResponseDrainSize;
+
+        if (options?.MaxResponseHeadersLength is { } maxResponseHeadersLength)
+            handler.MaxResponseHeadersLength = maxResponseHeadersLength;
+
+        if (options?.SslOptions is not null)
+            handler.SslOptions = options.SslOptions;
 
         return handler;
     }
