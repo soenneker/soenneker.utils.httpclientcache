@@ -46,6 +46,5 @@
         <PackageReference Include="Soenneker.Dictionaries.Singletons" Version="4.0.4" />
         <PackageReference Include="Soenneker.Dtos.HttpClientOptions" Version="4.0.13" />
         <PackageReference Include="Soenneker.Utils.Runtime" Version="4.0.912" />
-
     </ItemGroup>
 </Project>

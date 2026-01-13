@@ -38,13 +38,12 @@ public sealed class HttpClientCache : IHttpClientCache
 
     private async ValueTask<HttpClient> InitializeHttpClient(string _, OptionsFactory factory, CancellationToken cancellationToken)
     {
-        HttpClientOptions? options = await factory.Invoke(cancellationToken)
-                                                  .NoSync();
+        // Maintain sync context
+        HttpClientOptions? options = await factory.Invoke(cancellationToken);
 
         HttpClient httpClient = CreateHttpClient(options);
 
-        await ConfigureHttpClient(httpClient, options)
-            .NoSync();
+        await ConfigureHttpClient(httpClient, options);
 
         return httpClient;
     }
