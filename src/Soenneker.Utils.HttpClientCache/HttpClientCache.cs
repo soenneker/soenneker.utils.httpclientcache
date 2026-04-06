@@ -11,6 +11,8 @@ using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 using Soenneker.Dictionaries.Singletons;
+using Soenneker.Extensions.ValueTask;
+using Soenneker.Utils.HttpClientCache.Dtos;
 
 namespace Soenneker.Utils.HttpClientCache;
 
@@ -252,11 +254,16 @@ public sealed class HttpClientCache : IHttpClientCache
             httpClient.DefaultRequestHeaders.TryAddWithoutValidation(header.Key, header.Value);
     }
 
-    public ValueTask Remove(string id, CancellationToken cancellationToken = default) =>
-        _httpClients.Remove(id, cancellationToken);
+    public async ValueTask Remove(string id, CancellationToken cancellationToken = default)
+    {
+        await _httpClients.TryRemoveAndDispose(id)
+                          .NoSync();
+    }
 
-    public void RemoveSync(string id, CancellationToken cancellationToken = default) =>
-        _httpClients.RemoveSync(id, cancellationToken);
+    public void RemoveSync(string id, CancellationToken cancellationToken = default)
+    {
+        _httpClients.TryRemoveAndDisposeSync(id);
+    }
 
     public async ValueTask DisposeAsync()
     {

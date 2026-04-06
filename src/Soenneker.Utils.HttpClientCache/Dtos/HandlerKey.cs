@@ -1,7 +1,7 @@
 ﻿using System.Net;
 using System.Net.Http;
 
-namespace Soenneker.Utils.HttpClientCache;
+namespace Soenneker.Utils.HttpClientCache.Dtos;
 
 internal readonly record struct HandlerKey(
     long PooledConnectionLifetimeTicks,
