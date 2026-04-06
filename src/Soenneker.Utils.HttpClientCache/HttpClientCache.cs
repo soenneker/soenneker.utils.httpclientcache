@@ -254,21 +254,21 @@ public sealed class HttpClientCache : IHttpClientCache
             httpClient.DefaultRequestHeaders.TryAddWithoutValidation(header.Key, header.Value);
     }
 
-    public async ValueTask Remove(string id, CancellationToken cancellationToken = default)
+    public async ValueTask Remove(string id)
     {
         await _httpClients.TryRemoveAndDispose(id)
                           .NoSync();
     }
 
-    public void RemoveSync(string id, CancellationToken cancellationToken = default)
+    public void RemoveSync(string id)
     {
         _httpClients.TryRemoveAndDisposeSync(id);
     }
 
     public async ValueTask DisposeAsync()
     {
-        await _handlers.DisposeAsync();
-        await _httpClients.DisposeAsync();
+        await _handlers.DisposeAsync().NoSync();
+        await _httpClients.DisposeAsync().NoSync();
     }
 
     public void Dispose()

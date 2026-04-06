@@ -95,28 +95,18 @@ public interface IHttpClientCache : IAsyncDisposable, IDisposable
     HttpClient GetSync(string id, Func<ValueTask<HttpClientOptions?>> optionsFactory, CancellationToken cancellationToken = default);
 
     [Pure]
-    ValueTask<HttpClient> Get<TState>(
-        string id,
-        TState state,
-        Func<TState, HttpClientOptions?> optionsFactory,
-        CancellationToken cancellationToken = default)
+    ValueTask<HttpClient> Get<TState>(string id, TState state, Func<TState, HttpClientOptions?> optionsFactory, CancellationToken cancellationToken = default)
         where TState : notnull;
 
     [Pure]
-    ValueTask<HttpClient> Get<TState>(
-        string id,
-        TState state,
-        Func<TState, CancellationToken, ValueTask<HttpClientOptions?>> optionsFactory,
-        CancellationToken cancellationToken = default)
-        where TState : notnull;
+    ValueTask<HttpClient> Get<TState>(string id, TState state, Func<TState, CancellationToken, ValueTask<HttpClientOptions?>> optionsFactory,
+        CancellationToken cancellationToken = default) where TState : notnull;
 
     /// <summary>
     /// Should be used if the component using <see cref="IHttpClientCache"/> is disposed (unless the entire app is being disposed). Includes disposal of the <see cref="HttpClient"/>.
     /// </summary>
     /// <param name="id">The cache key</param>
-    /// <param name="cancellationToken"></param>
-    ValueTask Remove(string id, CancellationToken cancellationToken = default);
+    ValueTask Remove(string id);
 
-    /// <inheritdoc cref="Remove(string,CancellationToken)"/>
-    void RemoveSync(string id, CancellationToken cancellationToken = default);
+    void RemoveSync(string id);
 }
