@@ -48,6 +48,6 @@
         <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.7" />
         <PackageReference Include="Soenneker.Dictionaries.Singletons" Version="4.0.42" />
         <PackageReference Include="Soenneker.Dtos.HttpClientOptions" Version="4.0.22" />
-        <PackageReference Include="Soenneker.Utils.Runtime" Version="4.0.996" />
+        <PackageReference Include="Soenneker.Utils.Runtime" Version="4.0.997" />
     </ItemGroup>
 </Project>
