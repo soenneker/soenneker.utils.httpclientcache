@@ -38,7 +38,7 @@ jobs:
         run: dotnet build test/Soenneker.Utils.HttpClientCache.Tests/Soenneker.Utils.HttpClientCache.Tests.csproj --configuration Release --no-restore --verbosity minimal
 
       - name: Test
-        run: dotnet test test/Soenneker.Utils.HttpClientCache.Tests/Soenneker.Utils.HttpClientCache.Tests.csproj --configuration Release --no-build --no-restore --verbosity minimal
+        run: dotnet test --project test/Soenneker.Utils.HttpClientCache.Tests/Soenneker.Utils.HttpClientCache.Tests.csproj --configuration Release --no-build --no-restore --verbosity minimal
 
       - name: Pack
         run: dotnet pack src/Soenneker.Utils.HttpClientCache/Soenneker.Utils.HttpClientCache.csproj --configuration Release --no-build --no-restore --output . --verbosity minimal
