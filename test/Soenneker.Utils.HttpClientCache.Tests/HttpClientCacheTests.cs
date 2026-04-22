@@ -1,16 +1,15 @@
-﻿using System;
+using System;
 using System.Net.Http;
 using System.Threading.Tasks;
 using AwesomeAssertions;
 using Soenneker.Dtos.HttpClientOptions;
 using Soenneker.Tests.Unit;
-using Xunit;
 
 namespace Soenneker.Utils.HttpClientCache.Tests;
 
 public class HttpClientCacheTests : UnitTest
 {
-    [Fact]
+    [Test]
     public async Task Get_should_not_be_null_with_null_parameters()
     {
         var httpClientCache = new HttpClientCache();
@@ -21,7 +20,7 @@ public class HttpClientCacheTests : UnitTest
                   .NotBeNull();
     }
 
-    [Fact]
+    [Test]
     public async Task Get_should_not_be_null_with_parameters()
     {
         var httpClientCache = new HttpClientCache();
@@ -35,7 +34,7 @@ public class HttpClientCacheTests : UnitTest
                   .NotBeNull();
     }
 
-    [Fact]
+    [Test]
     public async Task Get_with_modifications_should_persist_in_cache()
     {
         var httpClientCache = new HttpClientCache();
