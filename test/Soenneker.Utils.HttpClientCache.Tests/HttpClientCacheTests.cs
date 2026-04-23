@@ -1,5 +1,6 @@
 using System;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using AwesomeAssertions;
 using Soenneker.Dtos.HttpClientOptions;
@@ -10,18 +11,17 @@ namespace Soenneker.Utils.HttpClientCache.Tests;
 public class HttpClientCacheTests : UnitTest
 {
     [Test]
-    public async Task Get_should_not_be_null_with_null_parameters()
+    public async Task Get_should_not_be_null_with_null_parameters(CancellationToken cancellationToken)
     {
         var httpClientCache = new HttpClientCache();
 
-        HttpClient httpClient = await httpClientCache.Get("test", cancellationToken: CancellationToken);
+        HttpClient httpClient = await httpClientCache.Get("test", cancellationToken: cancellationToken);
 
-        httpClient.Should()
-                  .NotBeNull();
+        httpClient.Should().NotBeNull();
     }
 
     [Test]
-    public async Task Get_should_not_be_null_with_parameters()
+    public async Task Get_should_not_be_null_with_parameters(CancellationToken cancellationToken)
     {
         var httpClientCache = new HttpClientCache();
 
@@ -29,27 +29,25 @@ public class HttpClientCacheTests : UnitTest
         HttpClient httpClient = await httpClientCache.Get("test", static () => new HttpClientOptions
         {
             Timeout = TimeSpan.FromMinutes(10)
-        }, CancellationToken);
-        httpClient.Should()
-                  .NotBeNull();
+        }, cancellationToken);
+        httpClient.Should().NotBeNull();
     }
 
     [Test]
-    public async Task Get_with_modifications_should_persist_in_cache()
+    public async Task Get_with_modifications_should_persist_in_cache(CancellationToken cancellationToken)
     {
         var httpClientCache = new HttpClientCache();
 
         HttpClient httpClient1 = await httpClientCache.Get("test", static () => new HttpClientOptions
         {
             Timeout = TimeSpan.FromMinutes(10)
-        }, CancellationToken);
+        }, cancellationToken);
         httpClient1.Timeout = TimeSpan.FromMinutes(1);
 
         HttpClient httpClient2 = await httpClientCache.Get("test", static () => new HttpClientOptions
         {
             Timeout = TimeSpan.FromMinutes(10)
-        }, CancellationToken);
-        httpClient2.Timeout.TotalMinutes.Should()
-                   .Be(1);
+        }, cancellationToken);
+        httpClient2.Timeout.TotalMinutes.Should().Be(1);
     }
 }
