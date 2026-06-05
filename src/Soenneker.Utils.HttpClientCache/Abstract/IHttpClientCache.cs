@@ -94,10 +94,28 @@ public interface IHttpClientCache : IAsyncDisposable, IDisposable
     [Pure]
     HttpClient GetSync(string id, Func<ValueTask<HttpClientOptions?>> optionsFactory, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Gets the value.
+    /// </summary>
+    /// <typeparam name="TState">The TState type.</typeparam>
+    /// <param name="id">The identifier.</param>
+    /// <param name="state">The state.</param>
+    /// <param name="optionsFactory">The options factory.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A task containing the result of the operation.</returns>
     [Pure]
     ValueTask<HttpClient> Get<TState>(string id, TState state, Func<TState, HttpClientOptions?> optionsFactory, CancellationToken cancellationToken = default)
         where TState : notnull;
 
+    /// <summary>
+    /// Gets the value.
+    /// </summary>
+    /// <typeparam name="TState">The TState type.</typeparam>
+    /// <param name="id">The identifier.</param>
+    /// <param name="state">The state.</param>
+    /// <param name="optionsFactory">The options factory.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A task containing the result of the operation.</returns>
     [Pure]
     ValueTask<HttpClient> Get<TState>(string id, TState state, Func<TState, CancellationToken, ValueTask<HttpClientOptions?>> optionsFactory,
         CancellationToken cancellationToken = default) where TState : notnull;
@@ -108,5 +126,9 @@ public interface IHttpClientCache : IAsyncDisposable, IDisposable
     /// <param name="id">The cache key</param>
     ValueTask Remove(string id);
 
+    /// <summary>
+    /// Removes sync.
+    /// </summary>
+    /// <param name="id">The identifier.</param>
     void RemoveSync(string id);
 }

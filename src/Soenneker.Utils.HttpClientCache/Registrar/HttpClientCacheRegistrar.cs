@@ -19,6 +19,11 @@ public static class HttpClientCacheRegistrar
         return services;
     }
 
+    /// <summary>
+    /// Adds http client cache as scoped.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <returns>The result of the operation.</returns>
     public static IServiceCollection AddHttpClientCacheAsScoped(this IServiceCollection services)
     {
         services.TryAddScoped<IHttpClientCache, HttpClientCache>();

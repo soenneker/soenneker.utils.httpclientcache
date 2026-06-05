@@ -71,6 +71,15 @@ public sealed class HttpClientCache : IHttpClientCache
         CancellationToken cancellationToken = default) where TState : notnull =>
         _httpClients.Get(id, (state, optionsFactory), static s => OptionsFactory.From(s.state, s.optionsFactory), cancellationToken);
 
+    /// <summary>
+    /// Gets the value.
+    /// </summary>
+    /// <typeparam name="TState">The TState type.</typeparam>
+    /// <param name="id">The identifier.</param>
+    /// <param name="state">The state.</param>
+    /// <param name="optionsFactory">The options factory.</param>
+    /// <param name="cancellationToken">The cancellation token.</param>
+    /// <returns>A task containing the result of the operation.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ValueTask<HttpClient> Get<TState>(string id, TState state, Func<TState, ValueTask<HttpClientOptions?>> optionsFactory,
         CancellationToken cancellationToken = default) where TState : notnull =>
@@ -265,12 +274,19 @@ public sealed class HttpClientCache : IHttpClientCache
         _httpClients.TryRemoveAndDisposeSync(id);
     }
 
+    /// <summary>
+    /// Asynchronously releases resources used by the current instance.
+    /// </summary>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public async ValueTask DisposeAsync()
     {
         await _handlers.DisposeAsync().NoSync();
         await _httpClients.DisposeAsync().NoSync();
     }
 
+    /// <summary>
+    /// Releases resources used by the current instance.
+    /// </summary>
     public void Dispose()
     {
         _handlers.Dispose();
