@@ -112,16 +112,46 @@ public sealed class HttpClientCache : IHttpClientCache
     {
         if (_isBrowser)
         {
-            return options?.HttpClientHandler != null ? new HttpClient(options.HttpClientHandler, disposeHandler: false) : new HttpClient();
+            if (options?.DelegatingHandlerFactories is { Count: > 0 } || options?.ModifyPrimaryHandler != null)
+                throw new PlatformNotSupportedException("Custom HTTP handler configuration is not supported in the browser.");
+
+            return new HttpClient();
         }
 
-        if (options?.HttpClientHandler != null)
-            return new HttpClient(options.HttpClientHandler, disposeHandler: false);
+        if (options?.DelegatingHandlerFactories is { Count: > 0 } factories)
+        {
+            HttpMessageHandler pipeline = CreateHandler(options);
+
+            try
+            {
+                for (int i = factories.Count - 1; i >= 0; i--)
+                {
+                    Func<DelegatingHandler> factory = factories[i] ?? throw new InvalidOperationException("A delegating-handler factory cannot be null.");
+                    DelegatingHandler handler = factory() ?? throw new InvalidOperationException("A delegating-handler factory returned null.");
+
+                    if (handler.InnerHandler != null)
+                    {
+                        handler.Dispose();
+                        throw new InvalidOperationException("A cache-composed delegating handler must not have InnerHandler set.");
+                    }
+
+                    handler.InnerHandler = pipeline;
+                    pipeline = handler;
+                }
+
+                return new HttpClient(pipeline, disposeHandler: true);
+            }
+            catch
+            {
+                pipeline.Dispose();
+                throw;
+            }
+        }
 
         // If caller supplies per-client proxy/SSL options, do NOT put those into the shared handler cache key
         // (it’s a common source of unbounded handler growth when options instances are created per call).
         // Instead, create a dedicated handler and attach it to the HttpClient so it will be disposed when the client is disposed.
-        if (options?.Proxy is not null || options?.SslOptions is not null)
+        if (options?.Proxy is not null || options?.SslOptions is not null || options?.ModifyPrimaryHandler != null)
             return new HttpClient(CreateHandler(options), disposeHandler: true);
 
         return new HttpClient(GetOrCreateHandler(options), disposeHandler: false);
@@ -250,6 +280,8 @@ public sealed class HttpClientCache : IHttpClientCache
 
         if (options?.SslOptions is not null)
             handler.SslOptions = options.SslOptions;
+
+        options?.ModifyPrimaryHandler?.Invoke(handler);
 
         return handler;
     }
