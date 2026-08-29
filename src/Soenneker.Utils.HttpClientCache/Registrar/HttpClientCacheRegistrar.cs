@@ -12,6 +12,7 @@ public static class HttpClientCacheRegistrar
     /// <summary>
     /// Adds <see cref="HttpClientCache"/> as a singleton to the <see cref="IServiceCollection"/>
     /// </summary>
+    /// <returns>Adds <see cref="HttpClientCache"/> as a singleton to the <see cref="IServiceCollection"/>.</returns>
     public static IServiceCollection AddHttpClientCacheAsSingleton(this IServiceCollection services)
     {
         services.TryAddSingleton<IHttpClientCache, HttpClientCache>();
@@ -20,10 +21,10 @@ public static class HttpClientCacheRegistrar
     }
 
     /// <summary>
-    /// Adds http client cache as scoped.
+    /// Registers the HTTP client cache and its dependencies with scoped lifetime.
     /// </summary>
-    /// <param name="services">The service collection.</param>
-    /// <returns>The result of the operation.</returns>
+    /// <param name="services">The service collection to resolve or update.</param>
+    /// <returns>The same service collection for chaining.</returns>
     public static IServiceCollection AddHttpClientCacheAsScoped(this IServiceCollection services)
     {
         services.TryAddScoped<IHttpClientCache, HttpClientCache>();

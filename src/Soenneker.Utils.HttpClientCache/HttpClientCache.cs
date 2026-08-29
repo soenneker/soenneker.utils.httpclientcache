@@ -72,14 +72,14 @@ public sealed class HttpClientCache : IHttpClientCache
         _httpClients.Get(id, (state, optionsFactory), static s => OptionsFactory.From(s.state, s.optionsFactory), cancellationToken);
 
     /// <summary>
-    /// Gets the value.
+    /// Returns the cached client for an identifier or creates it with the supplied options factory.
     /// </summary>
-    /// <typeparam name="TState">The TState type.</typeparam>
-    /// <param name="id">The identifier.</param>
-    /// <param name="state">The state.</param>
-    /// <param name="optionsFactory">The options factory.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>A task containing the result of the operation.</returns>
+    /// <typeparam name="TState">The options-factory state type.</typeparam>
+    /// <param name="id">The cache key identifying the client.</param>
+    /// <param name="state">State passed to the options factory.</param>
+    /// <param name="optionsFactory">Builds options only when a new client is created.</param>
+    /// <param name="cancellationToken">Signals that the operation should stop.</param>
+    /// <returns>The cached or newly created HTTP client.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public ValueTask<HttpClient> Get<TState>(string id, TState state, Func<TState, ValueTask<HttpClientOptions?>> optionsFactory,
         CancellationToken cancellationToken = default) where TState : notnull =>

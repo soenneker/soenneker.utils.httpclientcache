@@ -17,6 +17,7 @@ public interface IHttpClientCache : IAsyncDisposable, IDisposable
     /// </summary>
     /// <param name="id">The cache key</param>
     /// <param name="cancellationToken"></param>
+    /// <returns>The an <see cref="HttpClient"/> with default options.</returns>
     [Pure]
     ValueTask<HttpClient> Get(string id, CancellationToken cancellationToken = default);
 
@@ -27,6 +28,7 @@ public interface IHttpClientCache : IAsyncDisposable, IDisposable
     /// <param name="id">The cache key</param>
     /// <param name="optionsFactory">An asynchronous delegate that returns the options</param>
     /// <param name="cancellationToken"></param>
+    /// <returns>The an <see cref="HttpClient"/> using an asynchronous factory to provide <see cref="HttpClientOptions"/>. Factory is only invoked if the client doesn't exist in the cache.</returns>
     [Pure]
     ValueTask<HttpClient> Get(string id, Func<CancellationToken, ValueTask<HttpClientOptions?>> optionsFactory, CancellationToken cancellationToken = default);
 
@@ -37,6 +39,7 @@ public interface IHttpClientCache : IAsyncDisposable, IDisposable
     /// <param name="id">The cache key</param>
     /// <param name="optionsFactory">A synchronous delegate that returns the options</param>
     /// <param name="cancellationToken"></param>
+    /// <returns>The an <see cref="HttpClient"/> using a synchronous factory to provide <see cref="HttpClientOptions"/>. Factory is only invoked if the client doesn't exist in the cache.</returns>
     [Pure]
     ValueTask<HttpClient> Get(string id, Func<HttpClientOptions?> optionsFactory, CancellationToken cancellationToken = default);
 
@@ -47,6 +50,7 @@ public interface IHttpClientCache : IAsyncDisposable, IDisposable
     /// <param name="id">The cache key</param>
     /// <param name="optionsFactory">An asynchronous delegate that returns the options</param>
     /// <param name="cancellationToken"></param>
+    /// <returns>The an <see cref="HttpClient"/> using an asynchronous factory to provide <see cref="HttpClientOptions"/>. Factory is only invoked if the client doesn't exist in the cache.</returns>
     [Pure]
     ValueTask<HttpClient> Get(string id, Func<ValueTask<HttpClientOptions?>> optionsFactory, CancellationToken cancellationToken = default);
 
@@ -55,6 +59,7 @@ public interface IHttpClientCache : IAsyncDisposable, IDisposable
     /// </summary>
     /// <param name="id">The cache key</param>
     /// <param name="cancellationToken"></param>
+    /// <returns>The an <see cref="HttpClient"/> with default options synchronously.</returns>
     [Pure]
     HttpClient GetSync(string id, CancellationToken cancellationToken = default);
 
@@ -65,6 +70,7 @@ public interface IHttpClientCache : IAsyncDisposable, IDisposable
     /// <param name="id">The cache key</param>
     /// <param name="optionsFactory">An asynchronous delegate that returns the options</param>
     /// <param name="cancellationToken"></param>
+    /// <returns>The an <see cref="HttpClient"/> using an asynchronous factory to provide <see cref="HttpClientOptions"/> synchronously. Factory is only invoked if the client doesn't exist in the cache.</returns>
     [Pure]
     HttpClient GetSync(string id, Func<CancellationToken, ValueTask<HttpClientOptions?>> optionsFactory, CancellationToken cancellationToken = default);
 
@@ -75,6 +81,7 @@ public interface IHttpClientCache : IAsyncDisposable, IDisposable
     /// <param name="id">The cache key</param>
     /// <param name="optionsFactory">A synchronous delegate that returns the options</param>
     /// <param name="cancellationToken"></param>
+    /// <returns>The an <see cref="HttpClient"/> using a synchronous factory to provide <see cref="HttpClientOptions"/> synchronously. Factory is only invoked if the client doesn't exist in the cache.</returns>
     [Pure]
     HttpClient GetSync(string id, Func<HttpClientOptions?> optionsFactory, CancellationToken cancellationToken = default);
 
@@ -95,27 +102,27 @@ public interface IHttpClientCache : IAsyncDisposable, IDisposable
     HttpClient GetSync(string id, Func<ValueTask<HttpClientOptions?>> optionsFactory, CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Gets the value.
+    /// Returns the cached client for an identifier or creates it with the supplied options factory.
     /// </summary>
-    /// <typeparam name="TState">The TState type.</typeparam>
-    /// <param name="id">The identifier.</param>
-    /// <param name="state">The state.</param>
-    /// <param name="optionsFactory">The options factory.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>A task containing the result of the operation.</returns>
+    /// <typeparam name="TState">The options-factory state type.</typeparam>
+    /// <param name="id">The cache key identifying the client.</param>
+    /// <param name="state">State passed to the options factory.</param>
+    /// <param name="optionsFactory">Builds options only when a new client is created.</param>
+    /// <param name="cancellationToken">Signals that the operation should stop.</param>
+    /// <returns>The cached or newly created HTTP client.</returns>
     [Pure]
     ValueTask<HttpClient> Get<TState>(string id, TState state, Func<TState, HttpClientOptions?> optionsFactory, CancellationToken cancellationToken = default)
         where TState : notnull;
 
     /// <summary>
-    /// Gets the value.
+    /// Returns the cached client for an identifier or creates it with the supplied options factory.
     /// </summary>
-    /// <typeparam name="TState">The TState type.</typeparam>
-    /// <param name="id">The identifier.</param>
-    /// <param name="state">The state.</param>
-    /// <param name="optionsFactory">The options factory.</param>
-    /// <param name="cancellationToken">The cancellation token.</param>
-    /// <returns>A task containing the result of the operation.</returns>
+    /// <typeparam name="TState">The options-factory state type.</typeparam>
+    /// <param name="id">The cache key identifying the client.</param>
+    /// <param name="state">State passed to the options factory.</param>
+    /// <param name="optionsFactory">Builds options only when a new client is created.</param>
+    /// <param name="cancellationToken">Signals that the operation should stop.</param>
+    /// <returns>The cached or newly created HTTP client.</returns>
     [Pure]
     ValueTask<HttpClient> Get<TState>(string id, TState state, Func<TState, CancellationToken, ValueTask<HttpClientOptions?>> optionsFactory,
         CancellationToken cancellationToken = default) where TState : notnull;
@@ -124,6 +131,7 @@ public interface IHttpClientCache : IAsyncDisposable, IDisposable
     /// Should be used if the component using <see cref="IHttpClientCache"/> is disposed (unless the entire app is being disposed). Includes disposal of the <see cref="HttpClient"/>.
     /// </summary>
     /// <param name="id">The cache key</param>
+    /// <returns>Should be used if the component using <see cref="IHttpClientCache"/> is disposed (unless the entire app is being disposed). Includes disposal of the <see cref="HttpClient"/>.</returns>
     ValueTask Remove(string id);
 
     /// <summary>
