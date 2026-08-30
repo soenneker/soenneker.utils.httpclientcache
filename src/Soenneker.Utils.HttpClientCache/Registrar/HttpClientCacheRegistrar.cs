@@ -5,7 +5,7 @@ using Soenneker.Utils.HttpClientCache.Abstract;
 namespace Soenneker.Utils.HttpClientCache.Registrar;
 
 /// <summary>
-///  A utility library for singleton thread-safe HttpClients
+/// Registers the keyed HTTP client cache.
 /// </summary>
 public static class HttpClientCacheRegistrar
 {

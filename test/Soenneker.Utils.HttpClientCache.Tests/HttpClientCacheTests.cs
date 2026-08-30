@@ -78,6 +78,7 @@ public class HttpClientCacheTests : UnitTest
                .Which.PooledConnectionLifetime.Should().Be(TimeSpan.FromMinutes(3));
         primaryHandlerModified.Should().BeTrue();
         ((SocketsHttpHandler)handler.InnerHandler).UseProxy.Should().BeFalse();
+        ((SocketsHttpHandler)handler.InnerHandler).UseCookies.Should().BeFalse();
 
         await httpClientCache.Remove("pipeline");
         handler.Disposed.Should().BeTrue();

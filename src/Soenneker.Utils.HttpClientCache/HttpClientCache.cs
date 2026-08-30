@@ -16,7 +16,6 @@ using Soenneker.Utils.HttpClientCache.Dtos;
 
 namespace Soenneker.Utils.HttpClientCache;
 
-///<inheritdoc cref="IHttpClientCache"/>
 public sealed class HttpClientCache : IHttpClientCache
 {
     private readonly SingletonDictionary<HttpClient, OptionsFactory> _httpClients;
@@ -151,7 +150,7 @@ public sealed class HttpClientCache : IHttpClientCache
         // If caller supplies per-client proxy/SSL options, do NOT put those into the shared handler cache key
         // (it’s a common source of unbounded handler growth when options instances are created per call).
         // Instead, create a dedicated handler and attach it to the HttpClient so it will be disposed when the client is disposed.
-        if (options?.Proxy is not null || options?.SslOptions is not null || options?.ModifyPrimaryHandler != null)
+        if (options?.UseCookieContainer == true || options?.Proxy is not null || options?.SslOptions is not null || options?.ModifyPrimaryHandler != null)
             return new HttpClient(CreateHandler(options), disposeHandler: true);
 
         return new HttpClient(GetOrCreateHandler(options), disposeHandler: false);
@@ -198,7 +197,8 @@ public sealed class HttpClientCache : IHttpClientCache
         {
             PooledConnectionLifetime = TimeSpan.FromTicks(key.PooledConnectionLifetimeTicks),
             MaxConnectionsPerServer = key.MaxConnectionsPerServer,
-            ConnectTimeout = TimeSpan.FromTicks(key.ConnectTimeoutTicks)
+            ConnectTimeout = TimeSpan.FromTicks(key.ConnectTimeoutTicks),
+            UseCookies = key.UseCookies
         };
 
         if (key.UseCookies)
@@ -242,7 +242,8 @@ public sealed class HttpClientCache : IHttpClientCache
         {
             PooledConnectionLifetime = options?.PooledConnectionLifetime ?? _defaultPooledLifetime,
             MaxConnectionsPerServer = options?.MaxConnectionsPerServer ?? 40,
-            ConnectTimeout = options?.ConnectTimeout ?? _defaultConnectTimeout
+            ConnectTimeout = options?.ConnectTimeout ?? _defaultConnectTimeout,
+            UseCookies = options?.UseCookieContainer == true
         };
 
         if (options?.UseCookieContainer == true)
