@@ -16,6 +16,7 @@ using Soenneker.Utils.HttpClientCache.Dtos;
 
 namespace Soenneker.Utils.HttpClientCache;
 
+/// <inheritdoc cref="IHttpClientCache" />
 public sealed class HttpClientCache : IHttpClientCache
 {
     private readonly SingletonDictionary<HttpClient, OptionsFactory> _httpClients;
