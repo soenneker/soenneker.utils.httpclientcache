@@ -12,7 +12,7 @@ namespace Soenneker.Utils.HttpClientCache.Tests;
 public class HttpClientCacheTests : UnitTest
 {
     [Test]
-    public async Task Get_should_not_be_null_with_null_parameters(CancellationToken cancellationToken)
+    public async ValueTask Get_should_not_be_null_with_null_parameters(CancellationToken cancellationToken)
     {
         var httpClientCache = new HttpClientCache();
 
@@ -22,7 +22,7 @@ public class HttpClientCacheTests : UnitTest
     }
 
     [Test]
-    public async Task Get_should_not_be_null_with_parameters(CancellationToken cancellationToken)
+    public async ValueTask Get_should_not_be_null_with_parameters(CancellationToken cancellationToken)
     {
         var httpClientCache = new HttpClientCache();
 
@@ -35,7 +35,7 @@ public class HttpClientCacheTests : UnitTest
     }
 
     [Test]
-    public async Task Get_with_modifications_should_persist_in_cache(CancellationToken cancellationToken)
+    public async ValueTask Get_with_modifications_should_persist_in_cache(CancellationToken cancellationToken)
     {
         var httpClientCache = new HttpClientCache();
 
@@ -53,7 +53,7 @@ public class HttpClientCacheTests : UnitTest
     }
 
     [Test]
-    public async Task Get_should_compose_delegating_handler_pipeline(CancellationToken cancellationToken)
+    public async ValueTask Get_should_compose_delegating_handler_pipeline(CancellationToken cancellationToken)
     {
         var httpClientCache = new HttpClientCache();
         var handler = new StubHandler();
